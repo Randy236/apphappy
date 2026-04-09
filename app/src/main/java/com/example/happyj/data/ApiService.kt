@@ -24,6 +24,9 @@ interface ApiService {
     @POST("reservas-cancha")
     suspend fun crearReservaCancha(@Body body: ReservaCanchaCreate): ReservaCanchaDto
 
+    @PUT("reservas-cancha/{id}/cobrar-saldo")
+    suspend fun cobrarSaldoCancha(@Path("id") id: Int): ReservaCanchaDto
+
     @GET("reservas-salones")
     suspend fun listReservasSalones(
         @Query("salon") salon: String?,
@@ -33,6 +36,9 @@ interface ApiService {
 
     @POST("reservas-salones")
     suspend fun crearReservaSalon(@Body body: ReservaSalonCreate): ReservaSalonDto
+
+    @PUT("reservas-salones/{id}/cobrar-saldo")
+    suspend fun cobrarSaldoSalon(@Path("id") id: Int): ReservaSalonDto
 
     @GET("reportes")
     suspend fun reportes(

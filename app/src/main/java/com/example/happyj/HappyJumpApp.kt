@@ -4,6 +4,7 @@ import android.app.Application
 import com.example.happyj.data.NetworkModule
 import com.example.happyj.data.SessionRepository
 import com.example.happyj.data.TokenHolder
+import com.example.happyj.notifications.CobrarPendienteNotifier
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -14,6 +15,7 @@ class HappyJumpApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        CobrarPendienteNotifier.ensureChannel(this)
         NetworkModule.init(this)
         appScope.launch(Dispatchers.IO) {
             val s = SessionRepository(this@HappyJumpApp).currentSession()

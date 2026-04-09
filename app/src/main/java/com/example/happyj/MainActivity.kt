@@ -1,11 +1,16 @@
 package com.example.happyj
 
+import android.Manifest
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -22,6 +27,14 @@ class MainActivity : ComponentActivity() {
         setContent {
             HappyjTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
+                    val notifPerm = rememberLauncherForActivityResult(
+                        ActivityResultContracts.RequestPermission(),
+                    ) { _ -> }
+                    LaunchedEffect(Unit) {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            notifPerm.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        }
+                    }
                     val authVm: AuthViewModel = viewModel()
                     val session by authVm.session.collectAsStateWithLifecycle()
                     val sess = session

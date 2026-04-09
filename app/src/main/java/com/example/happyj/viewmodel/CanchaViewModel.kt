@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.happyj.data.NetworkModule
 import com.example.happyj.data.ReservaCanchaCreate
 import com.example.happyj.data.ReservaCanchaDto
+import com.example.happyj.notifications.CobrarPendienteScheduler
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -88,13 +89,32 @@ class CanchaViewModel(application: Application) : AndroidViewModel(application) 
         viewModelScope.launch {
             _error.value = null
             try {
+                val ctx = getApplication<android.app.Application>().applicationContext
                 for (body in cuerpos) {
-                    NetworkModule.api.crearReservaCancha(body)
+                    val dto = NetworkModule.api.crearReservaCancha(body)
+                    CobrarPendienteScheduler.scheduleCanchaIfPendiente(ctx, dto)
                 }
                 cargar()
                 onOk()
             } catch (e: Exception) {
                 _error.value = e.message ?: "No se pudo registrar (¿algún horario ocupado?)"
+            }
+        }
+    }
+
+    fun cobrarSaldoCancha(id: Int, onOk: () -> Unit) {
+        viewModelScope.launch {
+            _error.value = null
+            try {
+                NetworkModule.api.cobrarSaldoCancha(id)
+                CobrarPendienteScheduler.cancelCancha(
+                    getApplication<android.app.Application>().applicationContext,
+                    id,
+                )
+                cargar()
+                onOk()
+            } catch (e: Exception) {
+                _error.value = e.message ?: "No se pudo registrar el cobro"
             }
         }
     }

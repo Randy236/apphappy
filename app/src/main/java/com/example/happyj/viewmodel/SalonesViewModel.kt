@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.happyj.data.NetworkModule
 import com.example.happyj.data.ReservaSalonCreate
 import com.example.happyj.data.ReservaSalonDto
+import com.example.happyj.notifications.CobrarPendienteScheduler
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -87,11 +88,32 @@ class SalonesViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch {
             _error.value = null
             try {
-                NetworkModule.api.crearReservaSalon(body)
+                val dto = NetworkModule.api.crearReservaSalon(body)
+                CobrarPendienteScheduler.scheduleSalonIfPendiente(
+                    getApplication<android.app.Application>().applicationContext,
+                    dto,
+                )
                 cargar()
                 onOk()
             } catch (e: Exception) {
                 _error.value = e.message ?: "No se pudo registrar"
+            }
+        }
+    }
+
+    fun cobrarSaldoSalon(id: Int, onOk: () -> Unit) {
+        viewModelScope.launch {
+            _error.value = null
+            try {
+                NetworkModule.api.cobrarSaldoSalon(id)
+                CobrarPendienteScheduler.cancelSalon(
+                    getApplication<android.app.Application>().applicationContext,
+                    id,
+                )
+                cargar()
+                onOk()
+            } catch (e: Exception) {
+                _error.value = e.message ?: "No se pudo registrar el cobro"
             }
         }
     }
