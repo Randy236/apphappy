@@ -73,6 +73,24 @@ git commit -m "feat: descripcion corta del avance"
 git push
 ```
 
+Flujo por ramas recomendado:
+
+```bash
+git checkout develop
+# trabajas cambios
+git add .
+git commit -m "feat: avance"
+git push -u origin develop
+```
+
+Cuando el avance este estable:
+
+```bash
+git checkout main
+git merge develop
+git push
+```
+
 Tipos recomendados de commit:
 
 - `feat:` nueva funcionalidad
@@ -80,4 +98,8 @@ Tipos recomendados de commit:
 - `refactor:` mejora interna
 - `test:` pruebas
 - `docs:` documentacion
+
+## Material para curso
+
+- Checklist de despliegue y testing: `docs/DESPLIEGUE_Y_PRUEBAS_CHECKLIST.md`
 
