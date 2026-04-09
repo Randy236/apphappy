@@ -47,6 +47,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -55,6 +56,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.happyj.data.NetworkModule
 import com.example.happyj.data.PinUpdateBody
 import com.example.happyj.data.Session
+import com.example.happyj.ui.theme.HappyBgBottom
+import com.example.happyj.ui.theme.HappyBgMiddle
+import com.example.happyj.ui.theme.HappyBgTop
 import com.example.happyj.ui.theme.HappyGreen
 import com.example.happyj.viewmodel.AuthViewModel
 import com.example.happyj.viewmodel.PerfilViewModel
@@ -91,7 +95,7 @@ fun PerfilScreen(
     Column(
         modifier
             .fillMaxSize()
-            .background(Color(0xFFFAFAFA))
+            .background(Brush.verticalGradient(listOf(HappyBgTop, HappyBgMiddle, HappyBgBottom)))
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
     ) {

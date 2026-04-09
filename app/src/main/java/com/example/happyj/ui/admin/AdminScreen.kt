@@ -35,6 +35,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -45,13 +46,15 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.happyj.data.ReportesResponse
 import com.example.happyj.data.ResumenGeneral
+import com.example.happyj.ui.theme.HappyBgBottom
+import com.example.happyj.ui.theme.HappyBgMiddle
+import com.example.happyj.ui.theme.HappyBgTop
 import com.example.happyj.ui.theme.HappyGreen
 import com.example.happyj.viewmodel.AdminViewModel
 import java.time.format.DateTimeFormatter
 
 private val df = DateTimeFormatter.ISO_LOCAL_DATE
 
-private val FondoPantalla = Color(0xFFFAFAFA)
 private val TextoTitulo = Color(0xFF1A1A2E)
 private val AzulCancha = Color(0xFF1565C0)
 private val MoradoPinturas = Color(0xFF7B1FA2)
@@ -81,7 +84,7 @@ fun AdminScreen(
     Column(
         modifier
             .fillMaxSize()
-            .background(FondoPantalla)
+            .background(Brush.verticalGradient(listOf(HappyBgTop, HappyBgMiddle, HappyBgBottom)))
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
     ) {

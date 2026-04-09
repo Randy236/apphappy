@@ -53,6 +53,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -65,6 +66,9 @@ import com.example.happyj.data.ReservaCanchaCreate
 import com.example.happyj.data.ReservaCanchaDto
 import com.example.happyj.ui.theme.AdelantoAmarillo
 import com.example.happyj.ui.theme.DisponibleGreen
+import com.example.happyj.ui.theme.HappyBgBottom
+import com.example.happyj.ui.theme.HappyBgMiddle
+import com.example.happyj.ui.theme.HappyBgTop
 import com.example.happyj.ui.theme.HappyGreen
 import com.example.happyj.ui.theme.OcupadoRojo
 import com.example.happyj.ui.util.franjasHoraEnHora
@@ -74,6 +78,7 @@ import com.example.happyj.ui.util.slotDesdeHora
 import com.example.happyj.viewmodel.CanchaViewModel
 import java.time.DayOfWeek
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.temporal.TemporalAdjusters
 import java.util.Locale
@@ -104,6 +109,30 @@ private fun etiquetaDeporte(api: String) = when (api) {
 private fun horaFinSlot(horaSlot: String): String {
     val h = horaSlot.take(2).toIntOrNull() ?: 8
     return String.format("%02d:00", (h + 1).coerceAtMost(23))
+}
+
+private fun horaToMin(horaSql: String): Int {
+    val n = normalizarHoraApi(horaSql).split(":")
+    val hh = n.getOrNull(0)?.toIntOrNull() ?: 0
+    val mm = n.getOrNull(1)?.toIntOrNull() ?: 0
+    return hh * 60 + mm
+}
+
+private fun esSlotPasado(fecha: LocalDate, horaSlotSql: String): Boolean {
+    val hoy = LocalDate.now()
+    if (fecha.isBefore(hoy)) return true
+    if (fecha.isAfter(hoy)) return false
+    val ahoraMin = LocalTime.now().hour * 60 + LocalTime.now().minute
+    return horaToMin(horaSlotSql) <= ahoraMin
+}
+
+private fun canchaFinalizada(fecha: LocalDate, horaSlotSql: String): Boolean {
+    val hoy = LocalDate.now()
+    if (fecha.isBefore(hoy)) return true
+    if (fecha.isAfter(hoy)) return false
+    val ahoraMin = LocalTime.now().hour * 60 + LocalTime.now().minute
+    val finMin = horaToMin(horaSlotSql) + 60
+    return finMin <= ahoraMin
 }
 
 private fun fechaCortaEs(isoFecha: String): String {
@@ -141,6 +170,7 @@ fun CanchaScreen(
     var slotSel by remember { mutableStateOf<String?>(null) }
     var mostrarForm by remember { mutableStateOf(false) }
     var mostrarDetalle by remember { mutableStateOf<ReservaCanchaDto?>(null) }
+    var avisoHorario by remember { mutableStateOf<String?>(null) }
 
     val slots = remember { (8..21).map { slotDesdeHora(it) } }
     val diasSemana = remember(fecha) { semanaDelMes(fecha) }
@@ -149,7 +179,7 @@ fun CanchaScreen(
     Column(
         modifier
             .fillMaxSize()
-            .background(Color(0xFFFAFAFA)),
+            .background(Brush.verticalGradient(listOf(HappyBgTop, HappyBgMiddle, HappyBgBottom))),
     ) {
         Text(
             text = "Cancha Principal",
@@ -234,6 +264,14 @@ fun CanchaScreen(
                 fontSize = 13.sp,
             )
         }
+        avisoHorario?.let {
+            Text(
+                it,
+                color = Color(0xFF8D6E63),
+                modifier = Modifier.padding(horizontal = 20.dp),
+                fontSize = 13.sp,
+            )
+        }
 
         LazyColumn(
             state = listState,
@@ -245,14 +283,21 @@ fun CanchaScreen(
         ) {
             items(slots) { horaSlot ->
                 val r = reservas.find { normalizarHoraApi(it.hora) == horaSlot }
+                val finalizada = r != null && canchaFinalizada(fecha, r.hora)
                 SlotCardCancha(
                     horaInicio = horaSlot.take(5),
                     horaFin = horaFinSlot(horaSlot),
                     reserva = r,
+                    finalizada = finalizada,
                     onClick = {
                         if (r == null) {
-                            slotSel = horaSlot
-                            mostrarForm = true
+                            if (esSlotPasado(fecha, horaSlot)) {
+                                avisoHorario = "No se puede reservar en horas pasadas."
+                            } else {
+                                avisoHorario = null
+                                slotSel = horaSlot
+                                mostrarForm = true
+                            }
                         } else {
                             mostrarDetalle = r
                         }
@@ -277,6 +322,7 @@ fun CanchaScreen(
     }
 
     mostrarDetalle?.let { d ->
+        val saldoPend = d.adelanto < d.montoTotal - 1e-6
         AlertDialog(
             onDismissRequest = { mostrarDetalle = null },
             title = { Text("Reserva") },
@@ -288,6 +334,25 @@ fun CanchaScreen(
                     Text("Total: S/ ${d.montoTotal}")
                     Text("Adelanto: S/ ${d.adelanto}")
                     Text("Estado: ${d.estado}")
+                    if (saldoPend) {
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            "Saldo pendiente: S/ ${"%.2f".format(d.montoTotal - d.adelanto)}",
+                            color = Color(0xFF795548),
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
+                }
+            },
+            dismissButton = {
+                if (saldoPend) {
+                    TextButton(
+                        onClick = {
+                            viewModel.cobrarSaldoCancha(d.id) { mostrarDetalle = null }
+                        },
+                    ) {
+                        Text("Marcar como pagado", color = HappyGreen, fontWeight = FontWeight.Bold)
+                    }
                 }
             },
             confirmButton = {
@@ -309,21 +374,27 @@ private fun SlotCardCancha(
     horaInicio: String,
     horaFin: String,
     reserva: ReservaCanchaDto?,
+    finalizada: Boolean = false,
     onClick: () -> Unit,
 ) {
     val disponible = reserva == null
     val conAdelanto = reserva?.estado == "con_adelanto"
+    val saldoPendiente = reserva != null && reserva.adelanto < reserva.montoTotal
     val accent = when {
+        finalizada -> Color(0xFF78909C)
         disponible -> DisponibleGreen
         conAdelanto -> AdelantoAmarillo
         else -> OcupadoRojo
     }
     val badgeBg = when {
+        finalizada -> Color(0xFFECEFF1)
         disponible -> Color(0xFFE8F5E9)
         conAdelanto -> Color(0xFFFFF8E1)
         else -> Color(0xFFFFEBEE)
     }
     val badgeTexto = when {
+        finalizada && saldoPendiente -> "Finalizado (saldo pendiente)"
+        finalizada -> "Finalizado"
         disponible -> "Disponible"
         conAdelanto -> "Adelanto"
         else -> "Ocupado"
@@ -440,6 +511,14 @@ private fun SlotCardCancha(
                             Icons.AutoMirrored.Outlined.KeyboardArrowRight,
                             contentDescription = null,
                             tint = Color(0xFFBDBDBD),
+                        )
+                    }
+                    if (finalizada) {
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            text = if (saldoPendiente) "Reserva finalizada, falta cobrar saldo." else "Reserva finalizada y cancelada.",
+                            fontSize = 12.sp,
+                            color = Color(0xFF607D8B),
                         )
                     }
                 }
@@ -693,6 +772,8 @@ private fun FormReservaCanchaDialog(
                         }
                         val franjas = franjasHoraEnHora(horaIniText, horaFinText)
                         if (franjas.isEmpty()) return@Button
+                        val fechaSel = runCatching { LocalDate.parse(fecha) }.getOrNull() ?: return@Button
+                        if (franjas.any { esSlotPasado(fechaSel, it) }) return@Button
                         val n = franjas.size
                         val montos = repartirMontoSoles(mt, n)
                         val adelantos = repartirMontoSoles(adEnviarTotal, n)

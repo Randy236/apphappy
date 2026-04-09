@@ -57,6 +57,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -73,6 +74,9 @@ import com.example.happyj.ui.util.minutosAHoraSql
 import com.example.happyj.data.ReservaSalonDto
 import com.example.happyj.ui.theme.AdelantoAmarillo
 import com.example.happyj.ui.theme.DisponibleGreen
+import com.example.happyj.ui.theme.HappyBgBottom
+import com.example.happyj.ui.theme.HappyBgMiddle
+import com.example.happyj.ui.theme.HappyBgTop
 import com.example.happyj.ui.theme.HappyGreen
 import com.example.happyj.ui.theme.OcupadoRojo
 import com.example.happyj.ui.util.normalizarHoraApi
@@ -80,6 +84,7 @@ import com.example.happyj.ui.util.slotDesdeHora
 import com.example.happyj.viewmodel.SalonesViewModel
 import java.time.DayOfWeek
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.temporal.TemporalAdjusters
 import java.util.Locale
@@ -118,6 +123,22 @@ private fun solapa(slotInicioMin: Int, slotFinMin: Int, res: ReservaSalonDto): B
 private fun horaFinSlot(horaSlot: String): String {
     val h = horaSlot.take(2).toIntOrNull() ?: 8
     return String.format("%02d:00", (h + 1).coerceAtMost(23))
+}
+
+private fun salonSlotPasado(fecha: LocalDate, horaInicioSql: String): Boolean {
+    val hoy = LocalDate.now()
+    if (fecha.isBefore(hoy)) return true
+    if (fecha.isAfter(hoy)) return false
+    val ahoraMin = LocalTime.now().hour * 60 + LocalTime.now().minute
+    return aMinutos(horaInicioSql) <= ahoraMin
+}
+
+private fun salonFinalizado(fecha: LocalDate, reserva: ReservaSalonDto): Boolean {
+    val hoy = LocalDate.now()
+    if (fecha.isBefore(hoy)) return true
+    if (fecha.isAfter(hoy)) return false
+    val ahoraMin = LocalTime.now().hour * 60 + LocalTime.now().minute
+    return aMinutos(reserva.horaFin) <= ahoraMin
 }
 
 private fun tituloEventoReserva(r: ReservaSalonDto): String {
@@ -187,6 +208,7 @@ fun SalonesScreen(
     var mostrarForm by remember { mutableStateOf(false) }
     var slotSel by remember { mutableStateOf<String?>(null) }
     var detalle by remember { mutableStateOf<ReservaSalonDto?>(null) }
+    var avisoHorario by remember { mutableStateOf<String?>(null) }
 
     val slots = remember { (8..21).map { slotDesdeHora(it) } }
     val diasSemana = remember(fecha) { semanaDelMes(fecha) }
@@ -196,14 +218,14 @@ fun SalonesScreen(
             val h = horaSlot.take(2).toIntOrNull() ?: 8
             val ini = h * 60
             val fin = ini + 60
-            reservas.none { solapa(ini, fin, it) }
+            !salonSlotPasado(fecha, horaSlot) && reservas.none { solapa(ini, fin, it) }
         } ?: "09:00:00"
     }
 
     Column(
         modifier
             .fillMaxSize()
-            .background(Color(0xFFFAFAFA)),
+            .background(Brush.verticalGradient(listOf(HappyBgTop, HappyBgMiddle, HappyBgBottom))),
     ) {
         Row(
             modifier = Modifier
@@ -313,6 +335,9 @@ fun SalonesScreen(
         error?.let {
             Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(horizontal = 20.dp))
         }
+        avisoHorario?.let {
+            Text(it, color = Color(0xFF8D6E63), modifier = Modifier.padding(horizontal = 20.dp))
+        }
 
         LazyColumn(
             modifier = Modifier
@@ -330,12 +355,18 @@ fun SalonesScreen(
                     horaInicio = horaSlot.take(5),
                     horaFin = horaFinSlot(horaSlot),
                     reserva = res,
+                    finalizado = res?.let { salonFinalizado(fecha, it) } ?: false,
                     soloConsulta = soloConsulta,
                     onClick = {
                         if (res == null) {
                             if (!soloConsulta) {
-                                slotSel = horaSlot
-                                mostrarForm = true
+                                if (salonSlotPasado(fecha, horaSlot)) {
+                                    avisoHorario = "No se puede reservar en horas pasadas."
+                                } else {
+                                    avisoHorario = null
+                                    slotSel = horaSlot
+                                    mostrarForm = true
+                                }
                             }
                         } else {
                             detalle = res
@@ -360,6 +391,7 @@ fun SalonesScreen(
     }
 
     detalle?.let { d ->
+        val saldoPend = d.adelanto < d.precioTotal - 1e-6
         AlertDialog(
             onDismissRequest = { detalle = null },
             title = { Text("Reserva") },
@@ -372,6 +404,25 @@ fun SalonesScreen(
                     Text("Niños: ${d.numeroNinos}")
                     Text("Total: S/ ${d.precioTotal}")
                     Text("Adelanto: S/ ${d.adelanto}")
+                    if (saldoPend) {
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            "Saldo pendiente: S/ ${"%.2f".format(d.precioTotal - d.adelanto)}",
+                            color = Color(0xFF795548),
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
+                }
+            },
+            dismissButton = {
+                if (!soloConsulta && saldoPend) {
+                    TextButton(
+                        onClick = {
+                            viewModel.cobrarSaldoSalon(d.id) { detalle = null }
+                        },
+                    ) {
+                        Text("Marcar como pagado", color = HappyGreen, fontWeight = FontWeight.Bold)
+                    }
                 }
             },
             confirmButton = {
@@ -391,7 +442,7 @@ private fun ListaSalonesPantalla(
     Column(
         modifier
             .fillMaxSize()
-            .background(Color(0xFFFAFAFA)),
+            .background(Brush.verticalGradient(listOf(HappyBgTop, HappyBgMiddle, HappyBgBottom))),
     ) {
         Column(Modifier.padding(horizontal = 20.dp, vertical = 16.dp)) {
             Text(
@@ -464,22 +515,28 @@ private fun SlotSalonCard(
     horaInicio: String,
     horaFin: String,
     reserva: ReservaSalonDto?,
+    finalizado: Boolean = false,
     soloConsulta: Boolean = false,
     onClick: () -> Unit,
 ) {
     val libre = reserva == null
     val conAdelanto = reserva != null && reserva.adelanto > 0 && reserva.adelanto < reserva.precioTotal
+    val saldoPendiente = reserva != null && reserva.adelanto < reserva.precioTotal
     val accent = when {
+        finalizado -> Color(0xFF78909C)
         libre -> DisponibleGreen
         conAdelanto -> AdelantoAmarillo
         else -> OcupadoRojo
     }
     val badgeBg = when {
+        finalizado -> Color(0xFFECEFF1)
         libre -> Color(0xFFE8F5E9)
         conAdelanto -> Color(0xFFFFF8E1)
         else -> Color(0xFFFFEBEE)
     }
     val badgeLabel = when {
+        finalizado && saldoPendiente -> "Finalizado (saldo pendiente)"
+        finalizado -> "Finalizado"
         libre -> "Disponible"
         conAdelanto -> "Adelanto (${porcentajeAdelanto(reserva!!)}%)"
         else -> "Ocupado"
@@ -556,6 +613,14 @@ private fun SlotSalonCard(
                     if (libre && !soloConsulta) {
                         Icon(Icons.Outlined.AddCircleOutline, null, tint = HappyGreen, modifier = Modifier.size(26.dp))
                     }
+                }
+                if (finalizado && !libre) {
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        if (saldoPendiente) "Evento finalizado, falta cobrar saldo." else "Evento finalizado y cancelado.",
+                        fontSize = 12.sp,
+                        color = Color(0xFF607D8B),
+                    )
                 }
             }
         }
@@ -797,6 +862,8 @@ private fun FormReservaSalonPantalla(
                         val mIni = minutosDelDia(ini) ?: return@Button
                         val mFin = minutosDelDia(fin) ?: return@Button
                         if (mFin <= mIni) return@Button
+                        val fechaSel = runCatching { LocalDate.parse(fecha) }.getOrNull() ?: return@Button
+                        if (salonSlotPasado(fechaSel, ini)) return@Button
                         val adEnviar = when (modoPago) {
                             ModoPagoSalon.Cancelado -> pr
                             ModoPagoSalon.Adelanto -> {
