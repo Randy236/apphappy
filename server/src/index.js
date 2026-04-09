@@ -110,6 +110,22 @@ function rangoFiltro(periodo, fechaRef) {
   return { inicio: iso(first), fin: iso(last) };
 }
 
+function hoyIsoLocal() {
+  const d = new Date();
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+function ahoraMinLocal() {
+  const d = new Date();
+  return d.getHours() * 60 + d.getMinutes();
+}
+
+function timeToMin(t) {
+  const [h, m] = String(t).slice(0, 8).split(":");
+  return Number(h) * 60 + Number(m);
+}
+
 // --- Auth ---
 app.post("/auth/login", async (req, res) => {
   const { nombre, pin } = req.body || {};
@@ -219,6 +235,13 @@ app.post("/reservas-cancha", authMiddleware, async (req, res) => {
   if (Number.isNaN(adelanto) || adelanto < 0) {
     return res.status(400).json({ error: "adelanto inválido" });
   }
+  const hoy = hoyIsoLocal();
+  if (fecha < hoy) {
+    return res.status(400).json({ error: "No se puede reservar cancha para fechas pasadas" });
+  }
+  if (fecha === hoy && timeToMin(hora) <= ahoraMinLocal()) {
+    return res.status(400).json({ error: "No se puede reservar cancha en horas pasadas" });
+  }
 
   const estado = calcularEstadoCancha(adelanto, montoTotal);
 
@@ -239,6 +262,30 @@ app.post("/reservas-cancha", authMiddleware, async (req, res) => {
     }
     throw e;
   }
+});
+
+app.put("/reservas-cancha/:id/cobrar-saldo", authMiddleware, async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isFinite(id)) {
+    return res.status(400).json({ error: "id inválido" });
+  }
+  const [rows] = await pool.query(
+    "SELECT id, montoTotal, adelanto FROM reservas_cancha WHERE id = ?",
+    [id]
+  );
+  if (!rows.length) {
+    return res.status(404).json({ error: "Reserva no encontrada" });
+  }
+  const mt = Number(rows[0].montoTotal);
+  const estado = calcularEstadoCancha(mt, mt);
+  await pool.query(
+    "UPDATE reservas_cancha SET adelanto = ?, estado = ? WHERE id = ?",
+    [mt, estado, id]
+  );
+  const [updated] = await pool.query("SELECT * FROM reservas_cancha WHERE id = ?", [
+    id,
+  ]);
+  res.json(updated[0]);
 });
 
 // --- Salones ---
@@ -306,6 +353,16 @@ app.post("/reservas-salones", authMiddleware, trabajadorOnly, async (req, res) =
   if (Number.isNaN(precioTotal) || precioTotal < 0) {
     return res.status(400).json({ error: "precioTotal inválido" });
   }
+  if (timeToMin(horaFin) <= timeToMin(horaInicio)) {
+    return res.status(400).json({ error: "horaFin debe ser mayor que horaInicio" });
+  }
+  const hoy = hoyIsoLocal();
+  if (fecha < hoy) {
+    return res.status(400).json({ error: "No se puede reservar salones para fechas pasadas" });
+  }
+  if (fecha === hoy && timeToMin(horaInicio) <= ahoraMinLocal()) {
+    return res.status(400).json({ error: "No se puede reservar salones en horas pasadas" });
+  }
 
   const [existentes] = await pool.query(
     "SELECT horaInicio, horaFin FROM reservas_salones WHERE salon = ? AND fecha = ?",
@@ -338,6 +395,26 @@ app.post("/reservas-salones", authMiddleware, trabajadorOnly, async (req, res) =
     r.insertId,
   ]);
   res.status(201).json(inserted[0]);
+});
+
+app.put("/reservas-salones/:id/cobrar-saldo", authMiddleware, trabajadorOnly, async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isFinite(id)) {
+    return res.status(400).json({ error: "id inválido" });
+  }
+  const [rows] = await pool.query(
+    "SELECT id, precioTotal, adelanto FROM reservas_salones WHERE id = ?",
+    [id]
+  );
+  if (!rows.length) {
+    return res.status(404).json({ error: "Reserva no encontrada" });
+  }
+  const pt = Number(rows[0].precioTotal);
+  await pool.query("UPDATE reservas_salones SET adelanto = ? WHERE id = ?", [pt, id]);
+  const [updated] = await pool.query("SELECT * FROM reservas_salones WHERE id = ?", [
+    id,
+  ]);
+  res.json(updated[0]);
 });
 
 // --- Reportes (admin) ---
