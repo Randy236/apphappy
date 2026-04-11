@@ -3,9 +3,11 @@ package com.example.happyj.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.happyj.data.ApiExceptionMapper
 import com.example.happyj.data.NetworkModule
 import com.example.happyj.data.ReservaCanchaDto
 import com.example.happyj.data.ReservaSalonDto
+import com.example.happyj.ui.util.localDateDesdeCampoApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -47,7 +49,10 @@ class PerfilViewModel(application: Application) : AndroidViewModel(application) 
                 val salones = NetworkModule.api.listReservasSalones(null, d0, d1)
                 _lineas.value = combinarYOrdenar(cancha, salones)
             } catch (e: Exception) {
-                _errorHistorial.value = e.message ?: "No se pudo cargar el historial"
+                _errorHistorial.value = ApiExceptionMapper.mensajeUsuario(
+                    e,
+                    "No se pudo cargar el historial de reservas.",
+                )
             } finally {
                 _cargandoHistorial.value = false
             }
@@ -60,7 +65,7 @@ class PerfilViewModel(application: Application) : AndroidViewModel(application) 
     ): List<LineaHistorial> {
         val out = mutableListOf<LineaHistorial>()
         for (r in cancha) {
-            val fd = runCatching { LocalDate.parse(r.fecha) }.getOrNull() ?: continue
+            val fd = localDateDesdeCampoApi(r.fecha) ?: continue
             val t = runCatching {
                 LocalTime.parse(r.hora.take(8))
             }.getOrNull() ?: LocalTime.MIDNIGHT
@@ -76,7 +81,7 @@ class PerfilViewModel(application: Application) : AndroidViewModel(application) 
             )
         }
         for (r in salones) {
-            val fd = runCatching { LocalDate.parse(r.fecha) }.getOrNull() ?: continue
+            val fd = localDateDesdeCampoApi(r.fecha) ?: continue
             val t = runCatching {
                 LocalTime.parse(r.horaInicio.take(8))
             }.getOrNull() ?: LocalTime.MIDNIGHT

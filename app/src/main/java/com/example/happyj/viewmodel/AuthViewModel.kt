@@ -3,12 +3,11 @@ package com.example.happyj.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.happyj.data.ApiErrorBody
+import com.example.happyj.data.ApiExceptionMapper
 import com.example.happyj.data.LoginBody
 import com.example.happyj.data.NetworkModule
 import com.example.happyj.data.Session
 import com.example.happyj.data.SessionRepository
-import com.google.gson.Gson
 import retrofit2.HttpException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -64,20 +63,18 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
     }
 }
 
-private const val MSG_USUARIO_ACTIVO_OTRO = "Este usuario ya está activo en otro dispositivo"
+private const val MSG_USUARIO_ACTIVO_OTRO =
+    "Este usuario ya inició sesión en otro celular o tablet. Cierra sesión allí o pide a un administrador que reinicie el acceso."
 
 private fun parseLoginError(e: Exception): String {
-    if (e is HttpException) {
-        val raw = e.response()?.errorBody()?.string()
-        if (raw != null) {
-            try {
-                val msg = Gson().fromJson(raw, ApiErrorBody::class.java).error
-                if (!msg.isNullOrBlank()) return msg
-            } catch (_: Exception) {
-                // ignorar parse
-            }
-        }
-        if (e.code() == 409) return MSG_USUARIO_ACTIVO_OTRO
+    if (e is HttpException && e.code() == 409) return MSG_USUARIO_ACTIVO_OTRO
+    val base = ApiExceptionMapper.mensajeUsuario(
+        e,
+        "No se pudo iniciar sesión. Inténtalo otra vez.",
+    )
+    return if (ApiExceptionMapper.esProblemaDeConexion(e)) {
+        "$base\n\n${ApiExceptionMapper.consejoAccesoAlSistema()}"
+    } else {
+        base
     }
-    return e.message ?: "Error de conexión"
 }

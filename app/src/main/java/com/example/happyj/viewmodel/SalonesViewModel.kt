@@ -3,6 +3,8 @@ package com.example.happyj.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.happyj.data.ApiExceptionMapper
+import com.example.happyj.data.CancelacionBody
 import com.example.happyj.data.NetworkModule
 import com.example.happyj.data.ReservaSalonCreate
 import com.example.happyj.data.ReservaSalonDto
@@ -39,6 +41,12 @@ class SalonesViewModel(application: Application) : AndroidViewModel(application)
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
+    private suspend fun refrescarListaSalon() {
+        val s = _salonSel.value ?: return
+        val d = _fecha.value.format(fmt)
+        _reservas.value = NetworkModule.api.listReservasSalones(s, d, d)
+    }
+
     fun elegirSalon(nombre: String) {
         _salonSel.value = nombre
         cargar()
@@ -68,6 +76,16 @@ class SalonesViewModel(application: Application) : AndroidViewModel(application)
         cargar()
     }
 
+    fun irSemanaAnterior() {
+        _fecha.value = _fecha.value.minusWeeks(1)
+        cargar()
+    }
+
+    fun irSemanaSiguiente() {
+        _fecha.value = _fecha.value.plusWeeks(1)
+        cargar()
+    }
+
     fun cargar() {
         val s = _salonSel.value ?: return
         viewModelScope.launch {
@@ -77,7 +95,10 @@ class SalonesViewModel(application: Application) : AndroidViewModel(application)
                 val d = _fecha.value.format(fmt)
                 _reservas.value = NetworkModule.api.listReservasSalones(s, d, d)
             } catch (e: Exception) {
-                _error.value = e.message ?: "Error"
+                _error.value = ApiExceptionMapper.mensajeUsuario(
+                    e,
+                    "No se pudieron cargar las reservas de este salón.",
+                )
             } finally {
                 _loading.value = false
             }
@@ -86,6 +107,7 @@ class SalonesViewModel(application: Application) : AndroidViewModel(application)
 
     fun crearReserva(body: ReservaSalonCreate, onOk: () -> Unit) {
         viewModelScope.launch {
+            _loading.value = true
             _error.value = null
             try {
                 val dto = NetworkModule.api.crearReservaSalon(body)
@@ -93,16 +115,22 @@ class SalonesViewModel(application: Application) : AndroidViewModel(application)
                     getApplication<android.app.Application>().applicationContext,
                     dto,
                 )
-                cargar()
+                refrescarListaSalon()
                 onOk()
             } catch (e: Exception) {
-                _error.value = e.message ?: "No se pudo registrar"
+                _error.value = ApiExceptionMapper.mensajeUsuario(
+                    e,
+                    "No se pudo guardar la reserva del salón.",
+                )
+            } finally {
+                _loading.value = false
             }
         }
     }
 
     fun cobrarSaldoSalon(id: Int, onOk: () -> Unit) {
         viewModelScope.launch {
+            _loading.value = true
             _error.value = null
             try {
                 NetworkModule.api.cobrarSaldoSalon(id)
@@ -110,10 +138,38 @@ class SalonesViewModel(application: Application) : AndroidViewModel(application)
                     getApplication<android.app.Application>().applicationContext,
                     id,
                 )
-                cargar()
+                refrescarListaSalon()
                 onOk()
             } catch (e: Exception) {
-                _error.value = e.message ?: "No se pudo registrar el cobro"
+                _error.value = ApiExceptionMapper.mensajeUsuario(
+                    e,
+                    "No se pudo registrar el pago completo del salón.",
+                )
+            } finally {
+                _loading.value = false
+            }
+        }
+    }
+
+    fun cancelarReservaSalon(id: Int, motivo: String, onOk: () -> Unit) {
+        viewModelScope.launch {
+            _loading.value = true
+            _error.value = null
+            try {
+                NetworkModule.api.cancelarReservaSalon(id, CancelacionBody(motivo))
+                CobrarPendienteScheduler.cancelSalon(
+                    getApplication<android.app.Application>().applicationContext,
+                    id,
+                )
+                refrescarListaSalon()
+                onOk()
+            } catch (e: Exception) {
+                _error.value = ApiExceptionMapper.mensajeUsuario(
+                    e,
+                    "No se pudo cancelar la reserva del salón.",
+                )
+            } finally {
+                _loading.value = false
             }
         }
     }

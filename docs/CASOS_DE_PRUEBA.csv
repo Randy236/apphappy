@@ -1,0 +1,15 @@
+ID,Modulo,Nombre del caso,Precondiciones,Pasos,Resultado esperado,Prioridad,Tipo
+CP-001,Login,Login trabajador valido,API y MySQL activos; usuario trabajador existe.,1) Abrir app 2) Ingresar nombre y PIN 3) Entrar,Acceso a pantalla principal sin error.,P0,Funcional
+CP-002,Login,Login admin valido,Usuario administrador existe.,1) Ingresar credenciales admin 2) Entrar,Se muestran funciones de administrador.,P0,Funcional
+CP-003,Login,Credenciales incorrectas,API activa.,1) Nombre o PIN incorrectos 2) Entrar,Mensaje de error claro; no ingresa.,P0,Funcional
+CP-004,Login,PIN vacio o incompleto,App en login.,1) Dejar PIN incompleto 2) Entrar,Validacion en UI o error controlado.,P1,Funcional
+CP-005,Auth,Sesion duplicada (si aplica),Mismo usuario ya logueo en otro dispositivo.,1) Login en segundo dispositivo,Mensaje de conflicto segun API.,P1,Integracion
+CP-006,Config,Health API,PC y celular misma red o adb reverse.,1) Navegador http://IP:3000/health,JSON ok true.,P0,Integracion
+CP-007,Cancha,Listar reservas dia,Usuario logueado; datos de prueba.,1) Ir a Cancha 2) Seleccionar fecha,Lista coherente con API.,P0,Funcional
+CP-008,Cancha,Crear reserva valida,Cancha disponible en franja.,1) Nuevo 2) Completar datos 3) Guardar,Reserva creada y visible.,P0,Funcional
+CP-009,Cancha,Fecha u hora pasada,Regla servidor activa.,1) Intentar reserva en pasado,Error o bloqueo segun implementacion.,P1,Funcional
+CP-010,Salones,Listar reservas,Salones con datos.,1) Abrir Salones 2) Revisar lista,Datos acordes a API.,P0,Funcional
+CP-011,Salones,Crear reserva valida,Horario libre.,1) Nuevo 2) Datos completos 3) Guardar,Reserva creada.,P0,Funcional
+CP-012,Reportes,Generar reporte periodo,Hay datos.,1) Elegir periodo 2) Consultar,Valores mostrados sin crash.,P1,Funcional
+CP-013,Perfil,Cambiar PIN,Usuario logueado.,1) Perfil 2) Cambiar PIN 3) Confirmar,Nuevo PIN aceptado o mensaje error.,P1,Funcional
+CP-014,Regresion,Smoke post-cambio,Codigo actualizado.,1) Login 2) Cancha 3) Salones,Flujos basicos OK.,P1,Regresion

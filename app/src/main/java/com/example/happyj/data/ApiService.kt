@@ -27,6 +27,12 @@ interface ApiService {
     @PUT("reservas-cancha/{id}/cobrar-saldo")
     suspend fun cobrarSaldoCancha(@Path("id") id: Int): ReservaCanchaDto
 
+    @PUT("reservas-cancha/{id}/cancelar")
+    suspend fun cancelarReservaCancha(
+        @Path("id") id: Int,
+        @Body body: CancelacionBody,
+    ): ReservaCanchaDto
+
     @GET("reservas-salones")
     suspend fun listReservasSalones(
         @Query("salon") salon: String?,
@@ -40,11 +46,23 @@ interface ApiService {
     @PUT("reservas-salones/{id}/cobrar-saldo")
     suspend fun cobrarSaldoSalon(@Path("id") id: Int): ReservaSalonDto
 
+    @PUT("reservas-salones/{id}/cancelar")
+    suspend fun cancelarReservaSalon(
+        @Path("id") id: Int,
+        @Body body: CancelacionBody,
+    ): ReservaSalonDto
+
     @GET("reportes")
     suspend fun reportes(
         @Query("periodo") periodo: String,
         @Query("fecha") fecha: String?,
     ): ReportesResponse
+
+    @GET("reportes/cancelaciones")
+    suspend fun reportesCancelaciones(
+        @Query("periodo") periodo: String,
+        @Query("fecha") fecha: String?,
+    ): CancelacionesReporteResponse
 
     @PUT("usuarios/{id}/pin")
     suspend fun cambiarPin(

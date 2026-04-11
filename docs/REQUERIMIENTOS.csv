@@ -1,0 +1,14 @@
+ID,Requerimiento,Descripcion,Prioridad,Modulo,Criterio de aceptacion
+REQ-001,Autenticacion por nombre y PIN,El usuario ingresa nombre y PIN para acceder.,Alta,Login,Login exitoso devuelve token y muestra pantalla principal segun rol.
+REQ-002,Rol administrador,Usuario con rol administrador accede a funciones de administracion.,Alta,Auth/Navegacion,Tras login se muestran opciones acorde al rol.
+REQ-003,Rol trabajador,Usuario trabajador accede a funciones operativas sin panel admin completo.,Alta,Auth/Navegacion,No puede acceder a acciones exclusivas de admin.
+REQ-004,Sesion unica,Solo una sesion activa por usuario en dispositivos concurrentes.,Media,Auth,Segundo login recibe error controlado si hay sesion activa.
+REQ-005,Cierre de sesion,El usuario puede cerrar sesion desde la app.,Alta,Auth,Token invalidado o sesion limpiada localmente y vuelve a login.
+REQ-006,API base configurable,La URL del backend se define para emulador o dispositivo en red.,Alta,Configuracion,Build usa la URL indicada en configuracion local.
+REQ-007,Reservas cancha,Listar y crear reservas de cancha con horario y montos.,Alta,Cancha,Datos persistidos y visibles segun reglas de negocio.
+REQ-008,Estados cancha,Reservas reflejan estados (ocupado adelanto saldo segun implementacion).,Alta,Cancha,Estados coherentes con API y UI.
+REQ-009,Reservas salones,Listar y crear reservas de salones con datos de evento.,Alta,Salones,Validaciones de horario y salon aplicadas.
+REQ-010,Reportes,Visualizar reportes o metricas de ingresos si estan en la app.,Media,Reportes,Graficos o tablas con datos del periodo seleccionado.
+REQ-011,Perfil y PIN,Usuario puede cambiar PIN autenticado.,Media,Perfil,Cambio exitoso con validacion de PIN actual si aplica.
+REQ-012,Backend validaciones,API valida fechas horas y reglas de negocio.,Alta,API,Respuestas 4xx claras ante datos invalidos.
+REQ-013,Base de datos,Esquema MySQL alineado con endpoints.,Alta,Datos,Migraciones aplicables sin perdida de datos en entorno controlado.

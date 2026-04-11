@@ -38,6 +38,9 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -46,6 +49,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -72,6 +76,8 @@ import com.example.happyj.ui.util.horaTextoASql
 import com.example.happyj.ui.util.minutosDelDia
 import com.example.happyj.ui.util.minutosAHoraSql
 import com.example.happyj.data.ReservaSalonDto
+import com.example.happyj.ui.components.BannerMensajeImportante
+import com.example.happyj.ui.components.NavegacionSemanaBar
 import com.example.happyj.ui.theme.AdelantoAmarillo
 import com.example.happyj.ui.theme.DisponibleGreen
 import com.example.happyj.ui.theme.HappyBgBottom
@@ -83,14 +89,16 @@ import com.example.happyj.ui.util.normalizarHoraApi
 import com.example.happyj.ui.util.slotDesdeHora
 import com.example.happyj.viewmodel.SalonesViewModel
 import java.time.DayOfWeek
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.temporal.TemporalAdjusters
 import java.util.Locale
 import kotlin.math.roundToInt
 
-private val mesAnioFmt = DateTimeFormatter.ofPattern("MMMM yyyy", Locale("es", "ES"))
+private val mesAnioFmt = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.forLanguageTag("es-ES"))
 
 private fun nombreDiaCorto(d: LocalDate): String = when (d.dayOfWeek) {
     DayOfWeek.MONDAY -> "Lun"
@@ -185,6 +193,7 @@ private enum class ModoPagoSalon {
     Adelanto,
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SalonesScreen(
     modifier: Modifier = Modifier,
@@ -208,7 +217,9 @@ fun SalonesScreen(
     var mostrarForm by remember { mutableStateOf(false) }
     var slotSel by remember { mutableStateOf<String?>(null) }
     var detalle by remember { mutableStateOf<ReservaSalonDto?>(null) }
+    var reservaParaCancelarSalon by remember { mutableStateOf<ReservaSalonDto?>(null) }
     var avisoHorario by remember { mutableStateOf<String?>(null) }
+    var mostrarDatePicker by remember { mutableStateOf(false) }
 
     val slots = remember { (8..21).map { slotDesdeHora(it) } }
     val diasSemana = remember(fecha) { semanaDelMes(fecha) }
@@ -218,7 +229,8 @@ fun SalonesScreen(
             val h = horaSlot.take(2).toIntOrNull() ?: 8
             val ini = h * 60
             val fin = ini + 60
-            !salonSlotPasado(fecha, horaSlot) && reservas.none { solapa(ini, fin, it) }
+            !salonSlotPasado(fecha, horaSlot) &&
+                reservas.none { r -> r.salonActivo() && solapa(ini, fin, r) }
         } ?: "09:00:00"
     }
 
@@ -281,11 +293,25 @@ fun SalonesScreen(
         ) {
             Text(
                 fecha.format(mesAnioFmt).replaceFirstChar { it.uppercase() },
+                modifier = Modifier.weight(1f),
                 fontWeight = FontWeight.SemiBold,
                 color = Color(0xFF333333),
             )
-            Icon(Icons.Outlined.CalendarMonth, null, tint = HappyGreen)
+            IconButton(onClick = { mostrarDatePicker = true }) {
+                Icon(
+                    Icons.Outlined.CalendarMonth,
+                    contentDescription = "Abrir calendario para elegir fecha",
+                    tint = HappyGreen,
+                )
+            }
         }
+
+        NavegacionSemanaBar(
+            onSemanaAnterior = { viewModel.irSemanaAnterior() },
+            onSemanaSiguiente = { viewModel.irSemanaSiguiente() },
+            modifier = Modifier.padding(bottom = 2.dp),
+            textoAyuda = "Las flechas cambian la semana. Abajo eliges el día; el calendario arriba te lleva a otra fecha.",
+        )
 
         Row(
             modifier = Modifier
@@ -324,7 +350,7 @@ fun SalonesScreen(
             Text("Ir a hoy", color = HappyGreen, fontWeight = FontWeight.SemiBold)
         }
 
-        if (loading) {
+        if (loading && !mostrarForm) {
             CircularProgressIndicator(
                 Modifier
                     .align(Alignment.CenterHorizontally)
@@ -333,7 +359,11 @@ fun SalonesScreen(
             )
         }
         error?.let {
-            Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(horizontal = 20.dp))
+            BannerMensajeImportante(
+                titulo = null,
+                mensaje = it,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+            )
         }
         avisoHorario?.let {
             Text(it, color = Color(0xFF8D6E63), modifier = Modifier.padding(horizontal = 20.dp))
@@ -350,7 +380,7 @@ fun SalonesScreen(
                 val h = horaSlot.take(2).toIntOrNull() ?: 8
                 val slotIni = h * 60
                 val slotFin = slotIni + 60
-                val res = reservas.find { solapa(slotIni, slotFin, it) }
+                val res = reservas.filter { it.salonActivo() }.find { solapa(slotIni, slotFin, it) }
                 SlotSalonCard(
                     horaInicio = horaSlot.take(5),
                     horaFin = horaFinSlot(horaSlot),
@@ -376,6 +406,36 @@ fun SalonesScreen(
             }
             item { Spacer(Modifier.height(24.dp)) }
         }
+
+        if (mostrarDatePicker) {
+            val zone = ZoneId.systemDefault()
+            val datePickerState = rememberDatePickerState(
+                initialSelectedDateMillis = fecha.atStartOfDay(zone).toInstant().toEpochMilli(),
+            )
+            DatePickerDialog(
+                onDismissRequest = { mostrarDatePicker = false },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            datePickerState.selectedDateMillis?.let { ms ->
+                                val d = Instant.ofEpochMilli(ms).atZone(zone).toLocalDate()
+                                viewModel.elegirFecha(d)
+                            }
+                            mostrarDatePicker = false
+                        },
+                    ) {
+                        Text("Aceptar")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { mostrarDatePicker = false }) {
+                        Text("Cancelar")
+                    }
+                },
+            ) {
+                DatePicker(state = datePickerState)
+            }
+        }
     }
 
     if (!soloConsulta && mostrarForm && salon != null && slotSel != null) {
@@ -383,6 +443,7 @@ fun SalonesScreen(
             salon = salon!!,
             fecha = fecha.format(DateTimeFormatter.ISO_LOCAL_DATE),
             horaInicioSlot = slotSel!!,
+            guardando = loading,
             onDismiss = { mostrarForm = false },
             onConfirm = { body ->
                 viewModel.crearReserva(body) { mostrarForm = false }
@@ -391,10 +452,11 @@ fun SalonesScreen(
     }
 
     detalle?.let { d ->
-        val saldoPend = d.adelanto < d.precioTotal - 1e-6
+        val cancelada = !d.salonActivo()
+        val saldoPend = !cancelada && d.adelanto < d.precioTotal - 1e-6
         AlertDialog(
             onDismissRequest = { detalle = null },
-            title = { Text("Reserva") },
+            title = { Text(if (cancelada) "Reserva cancelada" else "Reserva") },
             text = {
                 Column {
                     Text("Cliente: ${d.nombreCliente}")
@@ -404,6 +466,14 @@ fun SalonesScreen(
                     Text("Niños: ${d.numeroNinos}")
                     Text("Total: S/ ${d.precioTotal}")
                     Text("Adelanto: S/ ${d.adelanto}")
+                    if (cancelada) {
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            "Motivo (cliente): ${d.motivoCancelacion ?: "—"}",
+                            color = Color(0xFF795548),
+                            fontSize = 13.sp,
+                        )
+                    }
                     if (saldoPend) {
                         Spacer(Modifier.height(8.dp))
                         Text(
@@ -426,7 +496,64 @@ fun SalonesScreen(
                 }
             },
             confirmButton = {
-                TextButton(onClick = { detalle = null }) { Text("Cerrar") }
+                Row {
+                    if (!soloConsulta && !cancelada) {
+                        TextButton(
+                            onClick = {
+                                reservaParaCancelarSalon = d
+                                detalle = null
+                            },
+                        ) {
+                            Text("Cancelar reserva", color = MaterialTheme.colorScheme.error)
+                        }
+                    }
+                    TextButton(onClick = { detalle = null }) { Text("Cerrar") }
+                }
+            },
+        )
+    }
+
+    reservaParaCancelarSalon?.let { rs ->
+        var motivo by remember(rs.id) { mutableStateOf("") }
+        val motivoOk = motivo.trim().length >= 2
+        AlertDialog(
+            onDismissRequest = { reservaParaCancelarSalon = null },
+            title = { Text("Cancelar reserva") },
+            text = {
+                Column {
+                    Text("Cliente: ${rs.nombreCliente}", fontSize = 14.sp)
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "Escribe el motivo que dio el cliente (obligatorio, mín. 2 caracteres).",
+                        fontSize = 13.sp,
+                        color = Color(0xFF757575),
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = motivo,
+                        onValueChange = { motivo = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text("Motivo") },
+                        minLines = 2,
+                        maxLines = 4,
+                        singleLine = false,
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { reservaParaCancelarSalon = null }) { Text("Volver") }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = motivoOk,
+                    onClick = {
+                        viewModel.cancelarReservaSalon(rs.id, motivo.trim()) {
+                            reservaParaCancelarSalon = null
+                        }
+                    },
+                ) {
+                    Text("Confirmar cancelación", color = MaterialTheme.colorScheme.error)
+                }
             },
         )
     }
@@ -632,6 +759,7 @@ private fun FormReservaSalonPantalla(
     salon: String,
     fecha: String,
     horaInicioSlot: String,
+    guardando: Boolean,
     onDismiss: () -> Unit,
     onConfirm: (ReservaSalonCreate) -> Unit,
 ) {
@@ -662,17 +790,28 @@ private fun FormReservaSalonPantalla(
     var adelantoIngresado by remember { mutableStateOf("") }
     val scroll = rememberScrollState()
 
-    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-        Surface(Modifier.fillMaxSize(), color = Color.White) {
-            Column(Modifier.fillMaxSize()) {
+    Dialog(
+        onDismissRequest = { if (!guardando) onDismiss() },
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        Box(Modifier.fillMaxSize()) {
+            Surface(Modifier.fillMaxSize(), color = Color.White) {
+                Column(Modifier.fillMaxSize()) {
                 Row(
                     Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 4.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    IconButton(onClick = onDismiss) {
-                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Volver", tint = Color(0xFF1A1A2E))
+                    IconButton(
+                        onClick = onDismiss,
+                        enabled = !guardando,
+                    ) {
+                        Icon(
+                            Icons.AutoMirrored.Outlined.ArrowBack,
+                            "Volver",
+                            tint = if (guardando) Color(0xFFBDBDBD) else Color(0xFF1A1A2E),
+                        )
                     }
                     Text(
                         "Nueva Reserva",
@@ -854,6 +993,7 @@ private fun FormReservaSalonPantalla(
                 }
                 Button(
                     onClick = {
+                        if (guardando) return@Button
                         val pr = precio.replace(",", ".").toDoubleOrNull() ?: 0.0
                         if (nombre.isBlank() || zona.isBlank() || pr <= 0) return@Button
                         if (tipo == "Cumpleanos" && cumple.isBlank()) return@Button
@@ -892,12 +1032,39 @@ private fun FormReservaSalonPantalla(
                         .fillMaxWidth()
                         .padding(16.dp)
                         .height(52.dp),
+                    enabled = !guardando,
                     shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = HappyGreen),
                 ) {
                     Text("Guardar Reserva", color = Color.White, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.width(8.dp))
                     Icon(Icons.AutoMirrored.Filled.ArrowForward, null, tint = Color.White)
+                }
+                }
+            }
+            if (guardando) {
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .background(Color(0x99000000)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        CircularProgressIndicator(color = HappyGreen)
+                        Spacer(Modifier.height(12.dp))
+                        Text(
+                            "Guardando reserva…",
+                            color = Color.White,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 16.sp,
+                        )
+                        Text(
+                            "Puede tardar si la red va lenta",
+                            color = Color.White.copy(alpha = 0.88f),
+                            fontSize = 13.sp,
+                            modifier = Modifier.padding(top = 4.dp),
+                        )
+                    }
                 }
             }
         }

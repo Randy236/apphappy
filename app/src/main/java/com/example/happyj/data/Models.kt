@@ -27,6 +27,9 @@ data class ReservaCanchaDto(
     val montoTotal: Double,
     val adelanto: Double,
     val estado: String,
+    @SerializedName("motivo_cancelacion") val motivoCancelacion: String? = null,
+    /** 30 o 60; null = inferir por hora (compatibilidad). */
+    @SerializedName("duracion_minutos") val duracionMinutos: Int? = null,
 )
 
 data class ReservaCanchaCreate(
@@ -36,6 +39,7 @@ data class ReservaCanchaCreate(
     val hora: String,
     val montoTotal: Double,
     val adelanto: Double,
+    val duracionMinutos: Int? = null,
 )
 
 data class ReservaSalonDto(
@@ -49,9 +53,14 @@ data class ReservaSalonDto(
     val horaFin: String,
     val precioTotal: Double,
     val adelanto: Double,
+    /** 0 = activa, 1 = cancelada (MySQL TINYINT vía JSON). */
+    @SerializedName("cancelada") val cancelada: Int = 0,
+    @SerializedName("motivo_cancelacion") val motivoCancelacion: String? = null,
     val salon: String,
     val fecha: String,
-)
+) {
+    fun salonActivo(): Boolean = cancelada == 0
+}
 
 data class ReservaSalonCreate(
     val nombreCliente: String,
@@ -110,6 +119,32 @@ data class RangoFechas(
     val fin: String,
 )
 
+data class CancelacionCanchaReporte(
+    val id: Int,
+    val nombreCliente: String,
+    val deporte: String?,
+    val fecha: String,
+    val hora: String,
+    @SerializedName("motivo_cancelacion") val motivoCancelacion: String? = null,
+)
+
+data class CancelacionSalonReporte(
+    val id: Int,
+    val nombreCliente: String,
+    val salon: String,
+    val fecha: String,
+    val horaInicio: String,
+    val horaFin: String,
+    val tipoEvento: String? = null,
+    @SerializedName("motivo_cancelacion") val motivoCancelacion: String? = null,
+)
+
+data class CancelacionesReporteResponse(
+    val rango: RangoFechas,
+    val cancha: List<CancelacionCanchaReporte> = emptyList(),
+    val salones: List<CancelacionSalonReporte> = emptyList(),
+)
+
 data class ReporteCancha(
     val ingresosPeriodo: Double,
     val ingresosSemanales: Double,
@@ -128,6 +163,11 @@ data class ReporteSalones(
 data class PinUpdateBody(
     val pinActual: String?,
     val pinNuevo: String,
+)
+
+/** Motivo obligatorio al cancelar una reserva (texto del cliente). */
+data class CancelacionBody(
+    val motivo: String,
 )
 
 data class ApiErrorBody(val error: String?)

@@ -7,8 +7,9 @@ import androidx.work.WorkManager
 import androidx.work.workDataOf
 import com.example.happyj.data.ReservaCanchaDto
 import com.example.happyj.data.ReservaSalonDto
+import com.example.happyj.ui.util.duracionReservaCanchaMinutos
+import com.example.happyj.ui.util.localDateDesdeCampoApi
 import com.example.happyj.work.CobrarPendienteWorker
-import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
 import java.util.concurrent.TimeUnit
@@ -22,10 +23,11 @@ object CobrarPendienteScheduler {
         if (dto.adelanto >= dto.montoTotal - 1e-6) return
         val zone = ZoneId.systemDefault()
         val horaNorm = dto.hora.trim().take(8)
+        val dMin = duracionReservaCanchaMinutos(dto)
         val end = try {
-            LocalDate.parse(dto.fecha)
-                .atTime(LocalTime.parse(horaNorm))
-                .plusHours(1)
+            val ld = localDateDesdeCampoApi(dto.fecha) ?: return
+            ld.atTime(LocalTime.parse(horaNorm))
+                .plusMinutes(dMin.toLong())
                 .atZone(zone)
         } catch (_: Exception) {
             return
@@ -47,8 +49,8 @@ object CobrarPendienteScheduler {
         val zone = ZoneId.systemDefault()
         val finNorm = dto.horaFin.trim().take(8)
         val end = try {
-            LocalDate.parse(dto.fecha)
-                .atTime(LocalTime.parse(finNorm))
+            val ld = localDateDesdeCampoApi(dto.fecha) ?: return
+            ld.atTime(LocalTime.parse(finNorm))
                 .atZone(zone)
         } catch (_: Exception) {
             return

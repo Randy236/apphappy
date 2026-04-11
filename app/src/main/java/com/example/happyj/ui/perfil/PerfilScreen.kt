@@ -53,9 +53,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.happyj.data.ApiExceptionMapper
 import com.example.happyj.data.NetworkModule
 import com.example.happyj.data.PinUpdateBody
 import com.example.happyj.data.Session
+import com.example.happyj.ui.components.BannerMensajeImportante
 import com.example.happyj.ui.theme.HappyBgBottom
 import com.example.happyj.ui.theme.HappyBgMiddle
 import com.example.happyj.ui.theme.HappyBgTop
@@ -204,7 +206,11 @@ fun PerfilScreen(
                             Text(it, color = HappyGreen, modifier = Modifier.padding(top = 8.dp), fontSize = 13.sp)
                         }
                         errorPin?.let {
-                            Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 8.dp), fontSize = 13.sp)
+                            BannerMensajeImportante(
+                                titulo = "No se guardó el PIN",
+                                mensaje = it,
+                                modifier = Modifier.padding(top = 10.dp),
+                            )
                         }
                         Spacer(Modifier.height(12.dp))
                         Button(
@@ -225,10 +231,19 @@ fun PerfilScreen(
                                             pinActual = ""
                                             pinNuevo = ""
                                         } else {
-                                            errorPin = "No se pudo cambiar el PIN"
+                                            val raw = try {
+                                                res.errorBody()?.string()
+                                            } catch (_: Exception) {
+                                                null
+                                            }
+                                            errorPin = ApiExceptionMapper.mensajeDesdeJsonCuerpo(raw)
+                                                ?: "No se pudo cambiar el PIN. Revisa los datos e inténtalo otra vez."
                                         }
                                     } catch (e: Exception) {
-                                        errorPin = e.message ?: "Error"
+                                        errorPin = ApiExceptionMapper.mensajeUsuario(
+                                            e,
+                                            "No se pudo cambiar el PIN.",
+                                        )
                                     }
                                 }
                             },
@@ -275,10 +290,10 @@ fun PerfilScreen(
                         }
                     }
                     errorHist != null -> {
-                        Text(
-                            errorHist!!,
-                            color = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.padding(16.dp),
+                        BannerMensajeImportante(
+                            titulo = "No se pudo cargar el historial",
+                            mensaje = errorHist!!,
+                            modifier = Modifier.padding(12.dp),
                         )
                     }
                     lineas.isEmpty() -> {

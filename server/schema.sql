@@ -18,9 +18,10 @@ CREATE TABLE IF NOT EXISTS reservas_cancha (
   hora TIME NOT NULL,
   montoTotal DECIMAL(10,2) NOT NULL,
   adelanto DECIMAL(10,2) NOT NULL DEFAULT 0,
-  estado ENUM('ocupado', 'con_adelanto') NOT NULL DEFAULT 'ocupado',
-  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE KEY uq_cancha_fecha_hora (fecha, hora)
+  estado ENUM('ocupado', 'con_adelanto', 'cancelado') NOT NULL DEFAULT 'ocupado',
+  motivo_cancelacion VARCHAR(500) NULL DEFAULT NULL,
+  duracion_minutos SMALLINT NULL DEFAULT NULL,
+  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS reservas_salones (
@@ -34,6 +35,8 @@ CREATE TABLE IF NOT EXISTS reservas_salones (
   horaFin TIME NOT NULL,
   precioTotal DECIMAL(10,2) NOT NULL,
   adelanto DECIMAL(10,2) NOT NULL DEFAULT 0,
+  cancelada TINYINT(1) NOT NULL DEFAULT 0,
+  motivo_cancelacion VARCHAR(500) NULL DEFAULT NULL,
   salon VARCHAR(120) NOT NULL,
   fecha DATE NOT NULL,
   createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP

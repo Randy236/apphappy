@@ -1,5 +1,23 @@
 package com.example.happyj.ui.util
 
+import com.example.happyj.data.ReservaCanchaDto
+import java.time.LocalDate
+import java.time.LocalTime
+
+/**
+ * Convierte el campo fecha del API a [LocalDate].
+ * Node/MySQL a veces serializan como ISO con hora (`2026-04-09T00:00:00.000Z`);
+ * [LocalDate.parse] solo acepta `yyyy-MM-dd` y falla en la `T`.
+ */
+fun localDateDesdeCampoApi(fecha: String?): LocalDate? {
+    if (fecha.isNullOrBlank()) return null
+    val t = fecha.trim()
+    if (t.length >= 10 && t[4] == '-' && t[7] == '-') {
+        return runCatching { LocalDate.parse(t.substring(0, 10)) }.getOrNull()
+    }
+    return runCatching { LocalDate.parse(t) }.getOrNull()
+}
+
 /** Normaliza hora del API (ej. "08:00:00") para comparar con slots. */
 fun normalizarHoraApi(hora: String): String {
     val t = hora.trim()
@@ -52,6 +70,110 @@ fun franjasHoraEnHora(horaInicio: String, horaFin: String): List<String> {
         t += 60
     }
     return out
+}
+
+/** Duración del bloque según la hora de inicio: :30 → 30 min, :00 → 60 min. */
+fun duracionCanchaMinutos(horaSql: String): Int {
+    val mm = normalizarHoraApi(horaSql).split(":").getOrNull(1)?.toIntOrNull() ?: 0
+    return if (mm == 30) 30 else 60
+}
+
+/** Duración real de una reserva guardada (columna opcional en API). */
+fun duracionReservaCanchaMinutos(r: ReservaCanchaDto): Int {
+    val d = r.duracionMinutos
+    if (d == 30 || d == 60) return d
+    return duracionCanchaMinutos(r.hora)
+}
+
+/** Un tramo atómico al guardar (ej. 13:00 con 30 min de juego). */
+data class FranjaCancha(val horaInicioSql: String, val duracionMinutos: Int)
+
+/**
+ * Inicios de slot en la grilla (rápidos de tocar): cada 30 min (:00 y :30), todos los días.
+ * Otros minutos (ej. 18:10) se eligen con «Otra hora».
+ */
+fun slotsCanchaParaFecha(@Suppress("UNUSED_PARAMETER") fecha: LocalDate): List<String> {
+    val out = mutableListOf<String>()
+    var m = 8 * 60
+    val ultimoInicio = 21 * 60 + 30
+    while (m <= ultimoInicio) {
+        out.add(minutosAHoraSql(m))
+        m += 30
+    }
+    return out
+}
+
+/**
+ * Parte el rango [horaInicio, horaFin) en tramos de 30 o 60 min hasta cubrirlo exactamente
+ * (ej. 11:00–13:30 → 11:00 60 min + 12:00 60 min + 13:00 30 min).
+ */
+fun franjasCanchaEntreDetalle(
+    horaInicio: String,
+    horaFin: String,
+    @Suppress("UNUSED_PARAMETER") fecha: LocalDate,
+): List<FranjaCancha> {
+    val a = minutosDelDia(horaInicio) ?: return emptyList()
+    val b = minutosDelDia(horaFin) ?: return emptyList()
+    if (b <= a) return emptyList()
+    val out = mutableListOf<FranjaCancha>()
+    var t = a
+    while (t < b) {
+        val remaining = b - t
+        if (remaining < 30) return emptyList()
+        val slotSql = minutosAHoraSql(t)
+        val mmPart = t % 60
+        val d = when {
+            remaining == 30 -> 30
+            mmPart == 30 -> 30
+            remaining >= 60 -> 60
+            else -> return emptyList()
+        }
+        if (t + d > b) return emptyList()
+        out.add(FranjaCancha(slotSql, d))
+        t += d
+    }
+    return out
+}
+
+fun franjasCanchaEntre(
+    horaInicio: String,
+    horaFin: String,
+    fecha: LocalDate,
+): List<String> = franjasCanchaEntreDetalle(horaInicio, horaFin, fecha).map { it.horaInicioSql }
+
+/**
+ * Sugerencia de inicio/fin (1 h) al abrir «Otra hora»: hoy = al menos ~10 min adelante;
+ * sin forzar solo horas en punto (útil si se animan a última hora).
+ */
+fun sugerenciaInicioFinCancha(fecha: LocalDate): Pair<String, String> {
+    val hoy = LocalDate.now()
+    if (fecha.isBefore(hoy)) return "09:00" to "10:00"
+    val minInicio: Int = if (fecha.isEqual(hoy)) {
+        val now = LocalTime.now()
+        val nm = now.hour * 60 + now.minute + 10
+        maxOf(8 * 60, nm)
+    } else {
+        9 * 60
+    }
+    val s = minInicio.coerceIn(8 * 60, 21 * 60)
+    val e = s + 60
+    return if (e > 22 * 60) {
+        val s2 = 21 * 60
+        minutosAHoraSql(s2).take(5) to minutosAHoraSql(s2 + 60).take(5)
+    } else {
+        minutosAHoraSql(s).take(5) to minutosAHoraSql(e).take(5)
+    }
+}
+
+/** null si el rango es coherente con las reglas de la cancha para esa fecha. */
+fun mensajeRangoCanchaInvalido(horaInicio: String, horaFin: String, fecha: LocalDate): String? {
+    val ini = horaTextoASql(horaInicio) ?: return "Escribe la hora de inicio como 18:10 (24 horas)."
+    val fin = horaTextoASql(horaFin) ?: return "Escribe la hora de fin como 19:10 (24 horas)."
+    val franjas = franjasCanchaEntreDetalle(ini.take(5), fin.take(5), fecha)
+    if (franjas.isEmpty()) {
+        return "Revisa el horario: usa 24 h (ej. 13:30, no 1:30). Debe poder armarse con medias horas y horas completas (ej. 11:00–13:30)."
+    }
+    return null
 }
 
 /** Reparte [total] en [n] partes iguales (centavos) para que la suma sea exacta. */

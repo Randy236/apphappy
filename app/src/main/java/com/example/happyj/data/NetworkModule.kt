@@ -20,14 +20,17 @@ object NetworkModule {
             .addInterceptor(log)
             .addInterceptor { chain ->
                 val req = chain.request()
-                val t = TokenHolder.token
-                val next = if (t != null) {
-                    req.newBuilder().header("Authorization", "Bearer $t").build()
-                } else req
-                chain.proceed(next)
+                val b = req.newBuilder()
+                if (BuildConfig.API_BASE_URL.contains("ngrok", ignoreCase = true)) {
+                    b.header("ngrok-skip-browser-warning", "true")
+                }
+                TokenHolder.token?.let { b.header("Authorization", "Bearer $it") }
+                chain.proceed(b.build())
             }
-            .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
+            // Red local a veces lenta: más margen para leer/escribir sin cortar a la mitad del guardado.
+            .connectTimeout(25, TimeUnit.SECONDS)
+            .readTimeout(90, TimeUnit.SECONDS)
+            .writeTimeout(90, TimeUnit.SECONDS)
             .build()
 
         val retrofit = Retrofit.Builder()

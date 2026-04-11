@@ -5,7 +5,12 @@
   "type": "module",
   "scripts": {
     "start": "node src/index.js",
-    "dev": "node --watch src/index.js"
+    "dev": "node --watch src/index.js",
+    "migrate:004": "node scripts/apply-migration-004.mjs",
+    "migrate:005": "node scripts/apply-migration-005.mjs",
+    "migrate:008": "node scripts/apply-migration-008.mjs",
+    "demo:reset-ventas": "node scripts/apply-cleanup-ventas-y-sesiones.mjs",
+    "cleanup:ventas-y-sesiones": "node scripts/apply-cleanup-ventas-y-sesiones.mjs"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

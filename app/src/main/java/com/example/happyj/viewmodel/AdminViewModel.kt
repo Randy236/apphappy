@@ -3,6 +3,8 @@ package com.example.happyj.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.happyj.data.ApiExceptionMapper
+import com.example.happyj.data.CancelacionesReporteResponse
 import com.example.happyj.data.NetworkModule
 import com.example.happyj.data.ReportesResponse
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,14 +32,28 @@ class AdminViewModel(application: Application) : AndroidViewModel(application) {
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
+    private val _mostrarCancelaciones = MutableStateFlow(false)
+    val mostrarCancelaciones: StateFlow<Boolean> = _mostrarCancelaciones.asStateFlow()
+
+    private val _cancelacionesLoading = MutableStateFlow(false)
+    val cancelacionesLoading: StateFlow<Boolean> = _cancelacionesLoading.asStateFlow()
+
+    private val _cancelaciones = MutableStateFlow<CancelacionesReporteResponse?>(null)
+    val cancelaciones: StateFlow<CancelacionesReporteResponse?> = _cancelaciones.asStateFlow()
+
+    private val _cancelacionesError = MutableStateFlow<String?>(null)
+    val cancelacionesError: StateFlow<String?> = _cancelacionesError.asStateFlow()
+
     fun setPeriodo(p: String) {
         _periodo.value = p
         cargar()
+        if (_mostrarCancelaciones.value) cargarCancelaciones()
     }
 
     fun setFechaRef(d: LocalDate) {
         _fechaRef.value = d
         cargar()
+        if (_mostrarCancelaciones.value) cargarCancelaciones()
     }
 
     fun cargar() {
@@ -50,9 +66,44 @@ class AdminViewModel(application: Application) : AndroidViewModel(application) {
                     _fechaRef.value.format(fmt),
                 )
             } catch (e: Exception) {
-                _error.value = e.message ?: "Error"
+                _error.value = ApiExceptionMapper.mensajeUsuario(
+                    e,
+                    "No se pudieron cargar los reportes.",
+                )
             } finally {
                 _loading.value = false
+            }
+        }
+    }
+
+    fun abrirPanelCancelaciones() {
+        _mostrarCancelaciones.value = true
+        cargarCancelaciones()
+    }
+
+    fun cerrarPanelCancelaciones() {
+        _mostrarCancelaciones.value = false
+        _cancelaciones.value = null
+        _cancelacionesError.value = null
+    }
+
+    fun cargarCancelaciones() {
+        viewModelScope.launch {
+            _cancelacionesLoading.value = true
+            _cancelacionesError.value = null
+            try {
+                _cancelaciones.value = NetworkModule.api.reportesCancelaciones(
+                    _periodo.value,
+                    _fechaRef.value.format(fmt),
+                )
+            } catch (e: Exception) {
+                _cancelacionesError.value = ApiExceptionMapper.mensajeUsuario(
+                    e,
+                    "No se pudieron cargar las cancelaciones.",
+                )
+                _cancelaciones.value = null
+            } finally {
+                _cancelacionesLoading.value = false
             }
         }
     }

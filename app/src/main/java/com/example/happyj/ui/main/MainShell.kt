@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.Celebration
@@ -48,9 +49,16 @@ import com.example.happyj.ui.theme.HappyGreen
 private val HeaderFondo = Color(0xFFF2F9F5)
 private val HeaderTextoSec = Color(0xFF5C6B66)
 
+private fun etiquetaRolUsuario(rol: String): String = when (rol) {
+    "administrador" -> "Administrador"
+    "trabajador" -> "Trabajador"
+    else -> rol.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+}
+
 @Composable
-private fun BienvenidaHeader(nombreUsuario: String) {
+private fun BienvenidaHeader(nombreUsuario: String, rol: String) {
     val nombre = nombreUsuario.trim().ifBlank { "Usuario" }
+    val rolTxt = etiquetaRolUsuario(rol)
     Surface(
         color = HeaderFondo,
         tonalElevation = 0.dp,
@@ -77,6 +85,19 @@ private fun BienvenidaHeader(nombreUsuario: String) {
                     fontSize = 14.sp,
                     color = HeaderTextoSec,
                 )
+                Spacer(Modifier.height(8.dp))
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = HappyGreen.copy(alpha = 0.12f),
+                ) {
+                    Text(
+                        text = "Cuenta: $rolTxt",
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = HappyGreen,
+                    )
+                }
             }
             Surface(
                 modifier = Modifier.size(46.dp),
@@ -113,7 +134,7 @@ fun MainShell(
     val perfilTabIndex = if (isAdmin) 3 else 2
 
     Scaffold(
-        topBar = { BienvenidaHeader(session.nombre) },
+        topBar = { BienvenidaHeader(session.nombre, session.rol) },
         bottomBar = {
             NavigationBar {
                 NavigationBarItem(

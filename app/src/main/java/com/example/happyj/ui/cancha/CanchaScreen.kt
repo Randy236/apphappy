@@ -1,6 +1,7 @@
 package com.example.happyj.ui.cancha
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -27,6 +29,9 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.AddCircleOutline
+import androidx.compose.material.icons.outlined.AccessTime
+import androidx.compose.material.icons.outlined.ChevronLeft
+import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.AlertDialog
@@ -51,11 +56,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -64,26 +71,42 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.happyj.data.ReservaCanchaCreate
 import com.example.happyj.data.ReservaCanchaDto
+import com.example.happyj.ui.components.BannerMensajeImportante
+import com.example.happyj.ui.components.NavegacionSemanaBar
 import com.example.happyj.ui.theme.AdelantoAmarillo
 import com.example.happyj.ui.theme.DisponibleGreen
 import com.example.happyj.ui.theme.HappyBgBottom
 import com.example.happyj.ui.theme.HappyBgMiddle
 import com.example.happyj.ui.theme.HappyBgTop
 import com.example.happyj.ui.theme.HappyGreen
+import com.example.happyj.ui.theme.HappyTextSecondary
 import com.example.happyj.ui.theme.OcupadoRojo
-import com.example.happyj.ui.util.franjasHoraEnHora
+import com.example.happyj.ui.util.EstadoDisponibilidadDiaCancha
+import com.example.happyj.ui.util.GrupoTurnoCancha
+import com.example.happyj.ui.util.agruparReservasCanchaContiguas
+import com.example.happyj.ui.util.duracionCanchaMinutos
+import com.example.happyj.ui.util.formatearDuracionTotalCancha
+import com.example.happyj.ui.util.duracionReservaCanchaMinutos
+import com.example.happyj.ui.util.franjasCanchaEntreDetalle
+import com.example.happyj.ui.util.franjasCanchaEntre
+import com.example.happyj.ui.util.mensajeRangoCanchaInvalido
+import com.example.happyj.ui.util.sugerenciaInicioFinCancha
 import com.example.happyj.ui.util.normalizarHoraApi
 import com.example.happyj.ui.util.repartirMontoSoles
-import com.example.happyj.ui.util.slotDesdeHora
+import com.example.happyj.ui.util.localDateDesdeCampoApi
+import com.example.happyj.ui.util.primerSlotSqlDelGrupo
+import com.example.happyj.ui.util.reservaQueSolapaSlot
+import com.example.happyj.ui.util.slotsCanchaParaFecha
 import com.example.happyj.viewmodel.CanchaViewModel
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalTime
+import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.time.temporal.TemporalAdjusters
 import java.util.Locale
 
-private val mesAnioFmt = DateTimeFormatter.ofPattern("MMMM yyyy", Locale("es", "ES"))
+private val mesAnioFmt = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.forLanguageTag("es-ES"))
 
 private fun nombreDiaCorto(d: LocalDate): String = when (d.dayOfWeek) {
     DayOfWeek.MONDAY -> "Lun"
@@ -106,9 +129,13 @@ private fun etiquetaDeporte(api: String) = when (api) {
     else -> api
 }
 
-private fun horaFinSlot(horaSlot: String): String {
-    val h = horaSlot.take(2).toIntOrNull() ?: 8
-    return String.format("%02d:00", (h + 1).coerceAtMost(23))
+/** Hora de fin del bloque (1 h si empieza en :00, 30 min si empieza en :30). */
+private fun horaFinCancha(horaSlot: String): String {
+    val start = horaToMin(horaSlot)
+    val end = start + duracionCanchaMinutos(horaSlot)
+    val hh = end / 60
+    val mm = end % 60
+    return String.format("%02d:%02d", hh, mm)
 }
 
 private fun horaToMin(horaSql: String): Int {
@@ -123,22 +150,22 @@ private fun esSlotPasado(fecha: LocalDate, horaSlotSql: String): Boolean {
     if (fecha.isBefore(hoy)) return true
     if (fecha.isAfter(hoy)) return false
     val ahoraMin = LocalTime.now().hour * 60 + LocalTime.now().minute
-    return horaToMin(horaSlotSql) <= ahoraMin
+    return horaToMin(horaSlotSql) < ahoraMin
 }
 
-private fun canchaFinalizada(fecha: LocalDate, horaSlotSql: String): Boolean {
+private fun canchaFinalizada(fecha: LocalDate, reserva: ReservaCanchaDto): Boolean {
     val hoy = LocalDate.now()
     if (fecha.isBefore(hoy)) return true
     if (fecha.isAfter(hoy)) return false
     val ahoraMin = LocalTime.now().hour * 60 + LocalTime.now().minute
-    val finMin = horaToMin(horaSlotSql) + 60
+    val finMin = horaToMin(reserva.hora) + duracionReservaCanchaMinutos(reserva)
     return finMin <= ahoraMin
 }
 
 private fun fechaCortaEs(isoFecha: String): String {
     return try {
-        val d = LocalDate.parse(isoFecha)
-        DateTimeFormatter.ofPattern("d MMM yyyy", Locale("es", "ES"))
+        val d = localDateDesdeCampoApi(isoFecha) ?: return isoFecha
+        DateTimeFormatter.ofPattern("d MMM yyyy", Locale.forLanguageTag("es-ES"))
             .format(d)
             .replace(".", "")
             .trim()
@@ -155,6 +182,215 @@ private enum class ModoPagoCancha {
     Adelanto,
 }
 
+private data class FilaGrillaCancha(
+    val horaSlot: String,
+    val libre: Boolean,
+    val grupo: GrupoTurnoCancha? = null,
+)
+
+private fun construirFilasListaCancha(
+    fecha: LocalDate,
+    reservas: List<ReservaCanchaDto>,
+): List<FilaGrillaCancha> {
+    val slotsL = slotsCanchaParaFecha(fecha)
+    val grupos = agruparReservasCanchaContiguas(reservas)
+    val activas = reservas.filter { it.estado != "cancelado" }
+    return slotsL.mapNotNull { horaSlot ->
+        val r = reservaQueSolapaSlot(reservas, horaSlot)
+        if (r == null) {
+            FilaGrillaCancha(horaSlot, libre = true, grupo = null)
+        } else {
+            val g = grupos.find { gr -> gr.segmentos.any { it.id == r.id } }
+                ?: GrupoTurnoCancha(listOf(r))
+            val primero = primerSlotSqlDelGrupo(slotsL, activas, g) ?: horaSlot
+            if (horaSlot != primero) return@mapNotNull null
+            FilaGrillaCancha(primero, libre = false, grupo = g)
+        }
+    }
+}
+
+@Composable
+private fun CalendarioCanchaDisponibilidadDialog(
+    mesVisible: YearMonth,
+    fechaSeleccionada: LocalDate,
+    estadoPorDia: Map<LocalDate, EstadoDisponibilidadDiaCancha>,
+    cargando: Boolean,
+    errorCarga: String?,
+    onMesChange: (YearMonth) -> Unit,
+    onElegirFecha: (LocalDate) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val tituloMes = mesVisible.format(mesAnioFmt).replaceFirstChar { it.uppercase() }
+    val offsetLunes = (mesVisible.atDay(1).dayOfWeek.value + 6) % 7
+    val celdas = buildList {
+        repeat(offsetLunes) { add(null) }
+        for (d in 1..mesVisible.lengthOfMonth()) add(mesVisible.atDay(d))
+        while (size % 7 != 0) add(null)
+    }
+    val nombresDiaSemana = listOf("Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom")
+
+    fun colorCelda(d: LocalDate?): Pair<Color, Color> {
+        if (d == null) return Color.Transparent to Color.Transparent
+        val st = estadoPorDia[d]
+        val base = when {
+            cargando && st == null -> Color(0xFFEEEEEE) to Color(0xFF9E9E9E)
+            st == null -> Color(0xFFEEEEEE) to Color(0xFF757575)
+            else -> when (st) {
+                EstadoDisponibilidadDiaCancha.Libre -> Color(0xFFC8E6C9) to Color(0xFF1B5E20)
+                EstadoDisponibilidadDiaCancha.Parcial -> Color(0xFFFFF9C4) to Color(0xFFF57F17)
+                EstadoDisponibilidadDiaCancha.Lleno -> Color(0xFFFFCDD2) to Color(0xFFB71C1C)
+                EstadoDisponibilidadDiaCancha.Pasado -> Color(0xFFECEFF1) to Color(0xFF78909C)
+            }
+        }
+        return base
+    }
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            shape = RoundedCornerShape(20.dp),
+            color = Color.White,
+            shadowElevation = 8.dp,
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    IconButton(onClick = { onMesChange(mesVisible.minusMonths(1)) }) {
+                        Icon(Icons.Outlined.ChevronLeft, contentDescription = "Mes anterior")
+                    }
+                    Text(
+                        tituloMes,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp,
+                        color = Color(0xFF1A1A2E),
+                    )
+                    IconButton(onClick = { onMesChange(mesVisible.plusMonths(1)) }) {
+                        Icon(Icons.Outlined.ChevronRight, contentDescription = "Mes siguiente")
+                    }
+                }
+                Text(
+                    "Toca un día para verlo en la grilla de horarios.",
+                    fontSize = 12.sp,
+                    color = HappyTextSecondary,
+                    modifier = Modifier.padding(bottom = 8.dp),
+                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    LeyendaCalendarioCancha(Color(0xFFC8E6C9), "Libre")
+                    LeyendaCalendarioCancha(Color(0xFFFFF9C4), "Parcial")
+                    LeyendaCalendarioCancha(Color(0xFFFFCDD2), "Lleno")
+                    LeyendaCalendarioCancha(Color(0xFFECEFF1), "Pasado")
+                }
+                errorCarga?.let { err ->
+                    Text(err, color = MaterialTheme.colorScheme.error, fontSize = 13.sp, modifier = Modifier.padding(bottom = 8.dp))
+                }
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                    nombresDiaSemana.forEach { n ->
+                        Text(
+                            n,
+                            fontSize = 11.sp,
+                            color = HappyTextSecondary,
+                            modifier = Modifier.weight(1f),
+                            textAlign = TextAlign.Center,
+                        )
+                    }
+                }
+                Spacer(Modifier.height(6.dp))
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    Column {
+                        celdas.chunked(7).forEach { semana ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 3.dp),
+                                horizontalArrangement = Arrangement.SpaceEvenly,
+                            ) {
+                                semana.forEach { dia ->
+                                    val (bg, fg) = colorCelda(dia)
+                                    val sel = dia != null && dia == fechaSeleccionada
+                                    Box(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .padding(2.dp)
+                                            .height(40.dp)
+                                            .clip(RoundedCornerShape(10.dp))
+                                            .background(bg)
+                                            .border(
+                                                width = if (sel) 2.dp else 0.dp,
+                                                color = if (sel) HappyGreen else Color.Transparent,
+                                                shape = RoundedCornerShape(10.dp),
+                                            )
+                                            .then(
+                                                if (dia != null) Modifier.clickable { onElegirFecha(dia) }
+                                                else Modifier,
+                                            ),
+                                        contentAlignment = Alignment.Center,
+                                    ) {
+                                        if (dia != null) {
+                                            Text(
+                                                "${dia.dayOfMonth}",
+                                                fontWeight = if (sel) FontWeight.Bold else FontWeight.SemiBold,
+                                                fontSize = 15.sp,
+                                                color = fg,
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if (cargando) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color(0x66FFFFFF)),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(40.dp),
+                                color = HappyGreen,
+                                strokeWidth = 3.dp,
+                            )
+                        }
+                    }
+                }
+                TextButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.align(Alignment.End),
+                ) {
+                    Text("Cerrar", color = HappyGreen, fontWeight = FontWeight.SemiBold)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LeyendaCalendarioCancha(color: Color, texto: String) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        Box(
+            modifier = Modifier
+                .size(10.dp)
+                .clip(RoundedCornerShape(2.dp))
+                .background(color),
+        )
+        Text(texto, fontSize = 10.sp, color = Color(0xFF616161))
+    }
+}
+
 @Composable
 fun CanchaScreen(
     modifier: Modifier = Modifier,
@@ -164,15 +400,25 @@ fun CanchaScreen(
     val reservas by viewModel.reservas.collectAsStateWithLifecycle()
     val loading by viewModel.loading.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
+    val estadoDiasMes by viewModel.estadoDiasMesCalendario.collectAsStateWithLifecycle()
+    val loadingCalendarioMes by viewModel.loadingCalendarioMes.collectAsStateWithLifecycle()
+    val errorCalendarioMes by viewModel.errorCalendarioMes.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) { viewModel.cargar() }
 
     var slotSel by remember { mutableStateOf<String?>(null) }
     var mostrarForm by remember { mutableStateOf(false) }
-    var mostrarDetalle by remember { mutableStateOf<ReservaCanchaDto?>(null) }
+    var mostrarDetalleGrupo by remember { mutableStateOf<GrupoTurnoCancha?>(null) }
+    var grupoParaCancelar by remember { mutableStateOf<GrupoTurnoCancha?>(null) }
     var avisoHorario by remember { mutableStateOf<String?>(null) }
+    var mostrarDatePicker by remember { mutableStateOf(false) }
+    var mesCalendarioUi by remember { mutableStateOf(YearMonth.now()) }
 
-    val slots = remember { (8..21).map { slotDesdeHora(it) } }
+    LaunchedEffect(mostrarDatePicker, mesCalendarioUi) {
+        if (mostrarDatePicker) viewModel.cargarDisponibilidadMesCalendario(mesCalendarioUi)
+    }
+
+    val filasGrilla = remember(reservas, fecha) { construirFilasListaCancha(fecha, reservas) }
     val diasSemana = remember(fecha) { semanaDelMes(fecha) }
     val listState = rememberLazyListState()
 
@@ -183,11 +429,56 @@ fun CanchaScreen(
     ) {
         Text(
             text = "Cancha Principal",
-            modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
             color = Color(0xFF1A1A2E),
         )
+        // Barra compacta: más espacio para la lista de horarios
+        Surface(
+            modifier = Modifier
+                .padding(horizontal = 16.dp, vertical = 4.dp)
+                .fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            color = Color(0xFFE8F5E9),
+            shadowElevation = 0.dp,
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 10.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Icon(
+                    Icons.Outlined.AccessTime,
+                    contentDescription = null,
+                    tint = HappyGreen,
+                    modifier = Modifier.size(20.dp),
+                )
+                Text(
+                    text = "Toca un horario abajo (:00 / :30).",
+                    modifier = Modifier.weight(1f),
+                    fontSize = 12.sp,
+                    lineHeight = 15.sp,
+                    color = Color(0xFF33691E),
+                    maxLines = 2,
+                )
+                Button(
+                    onClick = {
+                        avisoHorario = null
+                        slotSel = null
+                        mostrarForm = true
+                    },
+                    modifier = Modifier.height(36.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = HappyGreen),
+                ) {
+                    Text("Otra hora", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                }
+            }
+        }
 
         Row(
             modifier = Modifier
@@ -199,17 +490,34 @@ fun CanchaScreen(
             val mesTitulo = fecha.format(mesAnioFmt).replaceFirstChar { it.uppercase() }
             Text(
                 text = mesTitulo,
+                modifier = Modifier.weight(1f),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = Color(0xFF333333),
             )
-            Icon(Icons.Outlined.CalendarMonth, contentDescription = null, tint = HappyGreen)
+            IconButton(onClick = {
+                mesCalendarioUi = YearMonth.from(fecha)
+                mostrarDatePicker = true
+            }) {
+                Icon(
+                    Icons.Outlined.CalendarMonth,
+                    contentDescription = "Abrir calendario para elegir fecha",
+                    tint = HappyGreen,
+                )
+            }
         }
+
+        NavegacionSemanaBar(
+            onSemanaAnterior = { viewModel.irSemanaAnterior() },
+            onSemanaSiguiente = { viewModel.irSemanaSiguiente() },
+            modifier = Modifier.padding(bottom = 0.dp),
+            textoAyuda = null,
+        )
 
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 12.dp),
+                .padding(horizontal = 8.dp, vertical = 4.dp),
             horizontalArrangement = Arrangement.SpaceEvenly,
         ) {
             diasSemana.forEach { dia ->
@@ -239,14 +547,25 @@ fun CanchaScreen(
             }
         }
 
-        TextButtonCompact(
-            onClick = { viewModel.irHoy() },
+        Row(
             modifier = Modifier
-                .align(Alignment.CenterHorizontally)
-                .padding(bottom = 4.dp),
-        )
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 2.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            TextButton(onClick = { viewModel.irDiaAnterior() }) {
+                Text("← Día ant.", color = HappyGreen, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+            }
+            TextButton(onClick = { viewModel.irHoy() }) {
+                Text("Ir a hoy", color = HappyGreen, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+            }
+            TextButton(onClick = { viewModel.irDiaSiguiente() }) {
+                Text("Día sig. →", color = HappyGreen, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+            }
+        }
 
-        if (loading) {
+        if (loading && !mostrarForm) {
             CircularProgressIndicator(
                 modifier = Modifier
                     .align(Alignment.CenterHorizontally)
@@ -257,11 +576,10 @@ fun CanchaScreen(
         }
 
         error?.let {
-            Text(
-                it,
-                color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.padding(horizontal = 20.dp),
-                fontSize = 13.sp,
+            BannerMensajeImportante(
+                titulo = null,
+                mensaje = it,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
             )
         }
         avisoHorario?.let {
@@ -279,65 +597,146 @@ fun CanchaScreen(
                 .fillMaxWidth()
                 .weight(1f)
                 .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            items(slots) { horaSlot ->
-                val r = reservas.find { normalizarHoraApi(it.hora) == horaSlot }
-                val finalizada = r != null && canchaFinalizada(fecha, r.hora)
-                SlotCardCancha(
-                    horaInicio = horaSlot.take(5),
-                    horaFin = horaFinSlot(horaSlot),
-                    reserva = r,
-                    finalizada = finalizada,
-                    onClick = {
-                        if (r == null) {
-                            if (esSlotPasado(fecha, horaSlot)) {
-                                avisoHorario = "No se puede reservar en horas pasadas."
+            items(
+                filasGrilla,
+                key = { f ->
+                    if (f.libre) "L${f.horaSlot}"
+                    else "G${f.grupo!!.segmentos.first().id}"
+                },
+            ) { f ->
+                if (f.libre) {
+                    val horaSlot = f.horaSlot
+                    val pasado = esSlotPasado(fecha, horaSlot)
+                    val etiquetaDuracion =
+                        if (duracionCanchaMinutos(horaSlot) == 30) "½ h" else "1 h"
+                    SlotCardCancha(
+                        horaInicio = horaSlot.take(5),
+                        horaFin = horaFinCancha(horaSlot),
+                        reserva = null,
+                        finalizada = false,
+                        etiquetaDuracion = etiquetaDuracion,
+                        slotPasado = pasado,
+                        unTurnoLargo = false,
+                        hayAdelantoEnGrupo = false,
+                        onClick = {
+                            if (pasado) {
+                                avisoHorario =
+                                    "Este horario ya pasó. Si el cliente entra en unos minutos, pulsa «Otra hora» y escribe la hora exacta."
                             } else {
                                 avisoHorario = null
                                 slotSel = horaSlot
                                 mostrarForm = true
                             }
-                        } else {
-                            mostrarDetalle = r
-                        }
-                    },
-                )
+                        },
+                    )
+                } else {
+                    val g = f.grupo!!
+                    val rep = g.segmentos.first()
+                    val finalizada = g.segmentos.all { canchaFinalizada(fecha, it) }
+                    val etiquetaDuracion = if (g.segmentos.size > 1) {
+                        formatearDuracionTotalCancha(g.duracionTotalMinutos)
+                    } else {
+                        if (duracionCanchaMinutos(rep.hora) == 30) "½ h" else "1 h"
+                    }
+                    val hayAdelanto = g.segmentos.any { it.estado == "con_adelanto" }
+                    SlotCardCancha(
+                        horaInicio = g.horaInicioTexto,
+                        horaFin = g.horaFinTexto,
+                        reserva = rep,
+                        finalizada = finalizada,
+                        etiquetaDuracion = etiquetaDuracion,
+                        slotPasado = false,
+                        unTurnoLargo = g.segmentos.size > 1,
+                        hayAdelantoEnGrupo = hayAdelanto,
+                        onClick = { mostrarDetalleGrupo = g },
+                    )
+                }
             }
             item { Spacer(Modifier.height(24.dp)) }
         }
+
+        if (mostrarDatePicker) {
+            CalendarioCanchaDisponibilidadDialog(
+                mesVisible = mesCalendarioUi,
+                fechaSeleccionada = fecha,
+                estadoPorDia = estadoDiasMes,
+                cargando = loadingCalendarioMes,
+                errorCarga = errorCalendarioMes,
+                onMesChange = { mesCalendarioUi = it },
+                onElegirFecha = { d ->
+                    viewModel.elegirFecha(d)
+                    mostrarDatePicker = false
+                },
+                onDismiss = { mostrarDatePicker = false },
+            )
+        }
     }
 
-    if (mostrarForm && slotSel != null) {
+    if (mostrarForm) {
         FormReservaCanchaDialog(
             fecha = fecha.format(DateTimeFormatter.ISO_LOCAL_DATE),
-            hora = slotSel!!,
-            onDismiss = { mostrarForm = false },
+            horaSlotPrellenado = slotSel,
+            guardando = loading,
+            onDismiss = {
+                mostrarForm = false
+                slotSel = null
+            },
             onConfirm = { lista ->
                 viewModel.crearReservasCancha(lista) {
                     mostrarForm = false
+                    slotSel = null
                 }
             },
         )
     }
 
-    mostrarDetalle?.let { d ->
-        val saldoPend = d.adelanto < d.montoTotal - 1e-6
+    mostrarDetalleGrupo?.let { g ->
+        val rep = g.segmentos.first()
+        val cancelada = g.segmentos.all { it.estado == "cancelado" }
+        val saldoPend = !cancelada && g.segmentos.any { it.adelanto < it.montoTotal - 1e-6 }
+        val saldoTotal = g.montoTotalAcumulado - g.adelantoAcumulado
+        val variasFranjas = g.segmentos.size > 1
         AlertDialog(
-            onDismissRequest = { mostrarDetalle = null },
-            title = { Text("Reserva") },
+            onDismissRequest = { mostrarDetalleGrupo = null },
+            title = {
+                Text(
+                    when {
+                        cancelada -> "Reserva cancelada"
+                        variasFranjas -> "Reserva (un solo turno)"
+                        else -> "Reserva"
+                    },
+                )
+            },
             text = {
                 Column {
-                    Text("Cliente: ${d.nombreCliente}")
-                    Text("Deporte: ${etiquetaDeporte(d.deporte)}")
-                    Text("Hora: ${d.hora.take(5)}")
-                    Text("Total: S/ ${d.montoTotal}")
-                    Text("Adelanto: S/ ${d.adelanto}")
-                    Text("Estado: ${d.estado}")
+                    Text("Cliente: ${rep.nombreCliente}")
+                    Text("Deporte: ${etiquetaDeporte(rep.deporte)}")
+                    Text("Hora: ${g.horaInicioTexto} – ${g.horaFinTexto}")
+                    if (variasFranjas) {
+                        Text(
+                            "${g.segmentos.size} franjas contiguas · un solo turno de juego",
+                            fontSize = 12.sp,
+                            color = HappyTextSecondary,
+                            modifier = Modifier.padding(top = 4.dp),
+                        )
+                    }
+                    Text("Total: S/ ${"%.2f".format(g.montoTotalAcumulado)}")
+                    Text("Adelanto: S/ ${"%.2f".format(g.adelantoAcumulado)}")
+                    Text("Estado: ${rep.estado}")
+                    if (cancelada) {
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            "Motivo (cliente): ${rep.motivoCancelacion ?: "—"}",
+                            color = Color(0xFF795548),
+                            fontSize = 13.sp,
+                        )
+                    }
                     if (saldoPend) {
                         Spacer(Modifier.height(8.dp))
                         Text(
-                            "Saldo pendiente: S/ ${"%.2f".format(d.montoTotal - d.adelanto)}",
+                            "Saldo pendiente: S/ ${"%.2f".format(saldoTotal)}",
                             color = Color(0xFF795548),
                             fontWeight = FontWeight.SemiBold,
                         )
@@ -346,9 +745,12 @@ fun CanchaScreen(
             },
             dismissButton = {
                 if (saldoPend) {
+                    val idsSaldo = g.segmentos
+                        .filter { it.adelanto < it.montoTotal - 1e-6 }
+                        .map { it.id }
                     TextButton(
                         onClick = {
-                            viewModel.cobrarSaldoCancha(d.id) { mostrarDetalle = null }
+                            viewModel.cobrarSaldoGrupoCancha(idsSaldo) { mostrarDetalleGrupo = null }
                         },
                     ) {
                         Text("Marcar como pagado", color = HappyGreen, fontWeight = FontWeight.Bold)
@@ -356,16 +758,78 @@ fun CanchaScreen(
                 }
             },
             confirmButton = {
-                TextButton(onClick = { mostrarDetalle = null }) { Text("Cerrar") }
+                Row {
+                    if (!cancelada) {
+                        TextButton(
+                            onClick = {
+                                grupoParaCancelar = g
+                                mostrarDetalleGrupo = null
+                            },
+                        ) {
+                            Text("Cancelar reserva", color = MaterialTheme.colorScheme.error)
+                        }
+                    }
+                    TextButton(onClick = { mostrarDetalleGrupo = null }) { Text("Cerrar") }
+                }
             },
         )
     }
-}
 
-@Composable
-private fun TextButtonCompact(onClick: () -> Unit, modifier: Modifier = Modifier) {
-    TextButton(onClick = onClick, modifier = modifier) {
-        Text("Ir a hoy", color = HappyGreen, fontWeight = FontWeight.SemiBold)
+    grupoParaCancelar?.let { gc ->
+        var motivo by remember(gc.ids) { mutableStateOf("") }
+        val motivoOk = motivo.trim().length >= 2
+        val varias = gc.segmentos.size > 1
+        AlertDialog(
+            onDismissRequest = { grupoParaCancelar = null },
+            title = { Text(if (varias) "Cancelar turno completo" else "Cancelar reserva") },
+            text = {
+                Column {
+                    Text(
+                        "Cliente: ${gc.segmentos.first().nombreCliente}",
+                        fontSize = 14.sp,
+                    )
+                    if (varias) {
+                        Text(
+                            "Se cancelarán las ${gc.segmentos.size} franjas de ${gc.horaInicioTexto} a ${gc.horaFinTexto}.",
+                            fontSize = 13.sp,
+                            color = HappyTextSecondary,
+                            modifier = Modifier.padding(top = 6.dp),
+                        )
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "Escribe el motivo que dio el cliente (obligatorio, mín. 2 caracteres).",
+                        fontSize = 13.sp,
+                        color = HappyTextSecondary,
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = motivo,
+                        onValueChange = { motivo = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text("Motivo") },
+                        minLines = 2,
+                        maxLines = 4,
+                        singleLine = false,
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { grupoParaCancelar = null }) { Text("Volver") }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = motivoOk,
+                    onClick = {
+                        viewModel.cancelarGrupoCancha(gc.ids, motivo.trim()) {
+                            grupoParaCancelar = null
+                        }
+                    },
+                ) {
+                    Text("Confirmar cancelación", color = MaterialTheme.colorScheme.error)
+                }
+            },
+        )
     }
 }
 
@@ -375,10 +839,14 @@ private fun SlotCardCancha(
     horaFin: String,
     reserva: ReservaCanchaDto?,
     finalizada: Boolean = false,
+    etiquetaDuracion: String,
+    slotPasado: Boolean = false,
+    unTurnoLargo: Boolean = false,
+    hayAdelantoEnGrupo: Boolean = false,
     onClick: () -> Unit,
 ) {
     val disponible = reserva == null
-    val conAdelanto = reserva?.estado == "con_adelanto"
+    val conAdelanto = hayAdelantoEnGrupo || reserva?.estado == "con_adelanto"
     val saldoPendiente = reserva != null && reserva.adelanto < reserva.montoTotal
     val accent = when {
         finalizada -> Color(0xFF78909C)
@@ -403,8 +871,9 @@ private fun SlotCardCancha(
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .then(if (slotPasado) Modifier.alpha(0.52f) else Modifier)
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
     ) {
@@ -415,66 +884,148 @@ private fun SlotCardCancha(
         ) {
             Box(
                 modifier = Modifier
-                    .width(5.dp)
+                    .width(4.dp)
                     .fillMaxHeight()
                     .background(accent),
             )
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 14.dp, vertical = 14.dp),
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
             ) {
-                Text(
-                    text = "$horaInicio – $horaFin",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp,
-                    color = Color(0xFF1A1A2E),
-                )
-                Spacer(Modifier.height(8.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Surface(
-                        shape = RoundedCornerShape(50),
-                        color = badgeBg,
+                if (disponible) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
+                        Text(
+                            text = "$horaInicio – $horaFin",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 17.sp,
+                            color = Color(0xFF1A1A2E),
+                        )
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = Color(0xFFE3F2FD),
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(6.dp)
-                                    .background(accent, CircleShape),
-                            )
-                            Spacer(Modifier.width(6.dp))
                             Text(
-                                text = badgeTexto,
-                                fontSize = 12.sp,
+                                text = etiquetaDuracion,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = accent,
+                                color = Color(0xFF1565C0),
                             )
                         }
                     }
-                }
-                Spacer(Modifier.height(8.dp))
-                if (disponible) {
+                    Spacer(Modifier.height(6.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Surface(
+                            shape = RoundedCornerShape(50),
+                            color = badgeBg,
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(5.dp)
+                                        .background(accent, CircleShape),
+                                )
+                                Spacer(Modifier.width(5.dp))
+                                Text(
+                                    text = badgeTexto,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = accent,
+                                )
+                            }
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = if (slotPasado) "Pasado" else "Toca",
+                                fontSize = 11.sp,
+                                color = Color(0xFF9E9E9E),
+                            )
+                            Spacer(Modifier.width(4.dp))
+                            Icon(
+                                Icons.Outlined.AddCircleOutline,
+                                contentDescription = null,
+                                tint = if (slotPasado) Color(0xFFBDBDBD) else HappyGreen,
+                                modifier = Modifier.size(22.dp),
+                            )
+                        }
+                    }
+                } else {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text(
-                            text = "Toca para registrar reserva",
-                            fontSize = 13.sp,
-                            color = Color(0xFF9E9E9E),
-                        )
-                        Icon(
-                            Icons.Outlined.AddCircleOutline,
-                            contentDescription = null,
-                            tint = HappyGreen,
-                            modifier = Modifier.size(28.dp),
-                        )
+                        Column(modifier = Modifier.weight(1f)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = "$horaInicio – $horaFin",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 16.sp,
+                                    color = Color(0xFF1A1A2E),
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Surface(
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = Color(0xFFE3F2FD),
+                                ) {
+                                    Text(
+                                        text = etiquetaDuracion,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = Color(0xFF1565C0),
+                                    )
+                                }
+                            }
+                            if (unTurnoLargo) {
+                                Text(
+                                    "Un solo turno (varias franjas)",
+                                    fontSize = 11.sp,
+                                    color = Color(0xFF5D4037),
+                                    fontWeight = FontWeight.Medium,
+                                    modifier = Modifier.padding(top = 4.dp),
+                                )
+                            }
+                            Spacer(Modifier.height(4.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Surface(
+                                    shape = RoundedCornerShape(50),
+                                    color = badgeBg,
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(5.dp)
+                                                .background(accent, CircleShape),
+                                        )
+                                        Spacer(Modifier.width(5.dp))
+                                        Text(
+                                            text = badgeTexto,
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = accent,
+                                        )
+                                    }
+                                }
+                            }
+                        }
                     }
-                } else {
+                    Spacer(Modifier.height(6.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -488,21 +1039,21 @@ private fun SlotCardCancha(
                                 Icons.Outlined.Person,
                                 contentDescription = null,
                                 tint = Color(0xFF757575),
-                                modifier = Modifier.size(22.dp),
+                                modifier = Modifier.size(18.dp),
                             )
-                            Spacer(Modifier.width(8.dp))
+                            Spacer(Modifier.width(6.dp))
                             Column {
                                 Text(
                                     text = reserva!!.nombreCliente,
                                     fontWeight = FontWeight.SemiBold,
-                                    fontSize = 14.sp,
+                                    fontSize = 13.sp,
                                     color = Color(0xFF1A1A2E),
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
                                 )
                                 Text(
                                     text = etiquetaDeporte(reserva.deporte),
-                                    fontSize = 13.sp,
+                                    fontSize = 12.sp,
                                     color = Color(0xFF757575),
                                 )
                             }
@@ -511,13 +1062,14 @@ private fun SlotCardCancha(
                             Icons.AutoMirrored.Outlined.KeyboardArrowRight,
                             contentDescription = null,
                             tint = Color(0xFFBDBDBD),
+                            modifier = Modifier.size(20.dp),
                         )
                     }
                     if (finalizada) {
                         Spacer(Modifier.height(4.dp))
                         Text(
-                            text = if (saldoPendiente) "Reserva finalizada, falta cobrar saldo." else "Reserva finalizada y cancelada.",
-                            fontSize = 12.sp,
+                            text = if (saldoPendiente) "Finalizado · falta cobrar saldo" else "Finalizado",
+                            fontSize = 11.sp,
                             color = Color(0xFF607D8B),
                         )
                     }
@@ -530,36 +1082,54 @@ private fun SlotCardCancha(
 @Composable
 private fun FormReservaCanchaDialog(
     fecha: String,
-    hora: String,
+    horaSlotPrellenado: String?,
+    guardando: Boolean,
     onDismiss: () -> Unit,
     onConfirm: (List<ReservaCanchaCreate>) -> Unit,
 ) {
+    val fechaParsed = remember(fecha) { runCatching { LocalDate.parse(fecha) }.getOrNull() }
+    val sugerencia = remember(fecha) {
+        fechaParsed?.let { sugerenciaInicioFinCancha(it) } ?: ("09:00" to "10:00")
+    }
     var nombre by remember { mutableStateOf("") }
     var deporte by remember { mutableStateOf("Futbol") }
     var monto by remember { mutableStateOf("30") }
     var modoPago by remember { mutableStateOf(ModoPagoCancha.Cancelado) }
     var adelantoIngresado by remember { mutableStateOf("") }
-    var horaIniText by remember(hora) { mutableStateOf(hora.take(5)) }
-    var horaFinText by remember(hora) { mutableStateOf(horaFinSlot(hora).take(5)) }
+    var horaIniText by remember(horaSlotPrellenado, fecha) {
+        mutableStateOf(
+            if (horaSlotPrellenado != null) horaSlotPrellenado.take(5) else sugerencia.first,
+        )
+    }
+    var horaFinText by remember(horaSlotPrellenado, fecha) {
+        mutableStateOf(
+            if (horaSlotPrellenado != null) horaFinCancha(horaSlotPrellenado).take(5) else sugerencia.second,
+        )
+    }
+    var errorHorario by remember { mutableStateOf<String?>(null) }
     val scroll = rememberScrollState()
 
     Dialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = { if (!guardando) onDismiss() },
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
-        Surface(modifier = Modifier.fillMaxSize(), color = Color.White) {
-            Column(modifier = Modifier.fillMaxSize()) {
+        Box(Modifier.fillMaxSize()) {
+            Surface(modifier = Modifier.fillMaxSize(), color = Color.White) {
+                Column(modifier = Modifier.fillMaxSize()) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 4.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    IconButton(onClick = onDismiss) {
+                    IconButton(
+                        onClick = onDismiss,
+                        enabled = !guardando,
+                    ) {
                         Icon(
                             Icons.AutoMirrored.Outlined.ArrowBack,
                             contentDescription = "Volver",
-                            tint = Color(0xFF1A1A2E),
+                            tint = if (guardando) Color(0xFFBDBDBD) else Color(0xFF1A1A2E),
                         )
                     }
                     Text(
@@ -591,15 +1161,16 @@ private fun FormReservaCanchaDialog(
                     )
                     Spacer(Modifier.height(16.dp))
                     Text(
-                        "Horario (puedes alargar varias horas seguidas)",
+                        "Horario de juego",
                         fontSize = 13.sp,
                         color = Color(0xFF757575),
                         fontWeight = FontWeight.Medium,
                     )
                     Text(
-                        "Ej. 09:00 a 12:00 = 3 bloques de cancha. El monto se reparte entre cada hora.",
-                        fontSize = 11.sp,
+                        "Formato 24 h (1:30 pm = 13:30). Ej. 11:00 a 13:30: dos horas y media; el monto se reparte en cada tramo.",
+                        fontSize = 12.sp,
                         color = Color(0xFF9E9E9E),
+                        lineHeight = 16.sp,
                     )
                     Spacer(Modifier.height(8.dp))
                     Row(
@@ -609,6 +1180,7 @@ private fun FormReservaCanchaDialog(
                         OutlinedTextField(
                             value = horaIniText,
                             onValueChange = { v ->
+                                errorHorario = null
                                 horaIniText = v.filter { c -> c.isDigit() || c == ':' }.take(5)
                             },
                             modifier = Modifier.weight(1f),
@@ -621,6 +1193,7 @@ private fun FormReservaCanchaDialog(
                         OutlinedTextField(
                             value = horaFinText,
                             onValueChange = { v ->
+                                errorHorario = null
                                 horaFinText = v.filter { c -> c.isDigit() || c == ':' }.take(5)
                             },
                             modifier = Modifier.weight(1f),
@@ -629,6 +1202,15 @@ private fun FormReservaCanchaDialog(
                             placeholder = { Text("12:00") },
                             shape = RoundedCornerShape(12.dp),
                             colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = HappyGreen),
+                        )
+                    }
+                    errorHorario?.let { err ->
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            text = err,
+                            color = MaterialTheme.colorScheme.error,
+                            fontSize = 13.sp,
+                            lineHeight = 18.sp,
                         )
                     }
                     Spacer(Modifier.height(20.dp))
@@ -760,6 +1342,7 @@ private fun FormReservaCanchaDialog(
 
                 Button(
                     onClick = {
+                        if (guardando) return@Button
                         val mt = monto.replace(",", ".").toDoubleOrNull() ?: 0.0
                         if (nombre.isBlank() || mt <= 0) return@Button
                         val adEnviarTotal = when (modoPago) {
@@ -770,21 +1353,33 @@ private fun FormReservaCanchaDialog(
                                 a
                             }
                         }
-                        val franjas = franjasHoraEnHora(horaIniText, horaFinText)
-                        if (franjas.isEmpty()) return@Button
-                        val fechaSel = runCatching { LocalDate.parse(fecha) }.getOrNull() ?: return@Button
-                        if (franjas.any { esSlotPasado(fechaSel, it) }) return@Button
+                        val fechaSel = fechaParsed ?: return@Button
+                        mensajeRangoCanchaInvalido(horaIniText, horaFinText, fechaSel)?.let {
+                            errorHorario = it
+                            return@Button
+                        }
+                        val franjas = franjasCanchaEntreDetalle(horaIniText, horaFinText, fechaSel)
+                        if (franjas.isEmpty()) {
+                            errorHorario = "Revisa las horas: no se pudo armar el turno."
+                            return@Button
+                        }
+                        if (franjas.any { esSlotPasado(fechaSel, it.horaInicioSql) }) {
+                            errorHorario =
+                                "Algún tramo cae en horario ya pasado. Ajusta la hora de inicio o elige otro día."
+                            return@Button
+                        }
                         val n = franjas.size
                         val montos = repartirMontoSoles(mt, n)
                         val adelantos = repartirMontoSoles(adEnviarTotal, n)
-                        val lista = franjas.mapIndexed { i, h ->
+                        val lista = franjas.mapIndexed { i, f ->
                             ReservaCanchaCreate(
                                 nombreCliente = nombre.trim(),
                                 deporte = deporte,
                                 fecha = fecha,
-                                hora = h,
+                                hora = f.horaInicioSql,
                                 montoTotal = montos[i],
                                 adelanto = adelantos[i],
+                                duracionMinutos = f.duracionMinutos,
                             )
                         }
                         onConfirm(lista)
@@ -793,12 +1388,39 @@ private fun FormReservaCanchaDialog(
                         .fillMaxWidth()
                         .padding(16.dp)
                         .height(52.dp),
+                    enabled = !guardando,
                     shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = HappyGreen),
                 ) {
                     Text("Guardar Reserva", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                     Spacer(Modifier.width(8.dp))
                     Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = Color.White)
+                }
+                }
+            }
+            if (guardando) {
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .background(Color(0x99000000)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        CircularProgressIndicator(color = HappyGreen)
+                        Spacer(Modifier.height(12.dp))
+                        Text(
+                            "Guardando reserva…",
+                            color = Color.White,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 16.sp,
+                        )
+                        Text(
+                            "Puede tardar si la red va lenta",
+                            color = Color.White.copy(alpha = 0.88f),
+                            fontSize = 13.sp,
+                            modifier = Modifier.padding(top = 4.dp),
+                        )
+                    }
                 }
             }
         }
