@@ -142,15 +142,15 @@ fun franjasCanchaEntre(
 ): List<String> = franjasCanchaEntreDetalle(horaInicio, horaFin, fecha).map { it.horaInicioSql }
 
 /**
- * Sugerencia de inicio/fin (1 h) al abrir «Otra hora»: hoy = al menos ~10 min adelante;
- * sin forzar solo horas en punto (útil si se animan a última hora).
+ * Sugerencia de inicio/fin (1 h) al abrir «Otra hora»: hoy = un par de minutos después de ahora
+ * (para turnos de última hora, ej. 12:15 si son las 12:11).
  */
 fun sugerenciaInicioFinCancha(fecha: LocalDate): Pair<String, String> {
     val hoy = LocalDate.now()
     if (fecha.isBefore(hoy)) return "09:00" to "10:00"
     val minInicio: Int = if (fecha.isEqual(hoy)) {
         val now = LocalTime.now()
-        val nm = now.hour * 60 + now.minute + 10
+        val nm = now.hour * 60 + now.minute + 2
         maxOf(8 * 60, nm)
     } else {
         9 * 60
@@ -174,6 +174,22 @@ fun mensajeRangoCanchaInvalido(horaInicio: String, horaFin: String, fecha: Local
         return "Revisa el horario: usa 24 h (ej. 13:30, no 1:30). Debe poder armarse con medias horas y horas completas (ej. 11:00–13:30)."
     }
     return null
+}
+
+/**
+ * Solo el **inicio del turno** (campo inicio–fin) se compara con la hora actual.
+ * No usar para cada tramo atómico: un turno 11:00–12:30 tiene tramos intermedios que
+ * «ya pasaron» a mediodía sin invalidar la reserva.
+ */
+fun inicioTurnoCanchaEsPasado(fecha: LocalDate, horaInicioCampo: String): Boolean {
+    val hoy = LocalDate.now()
+    if (fecha.isBefore(hoy)) return true
+    if (!fecha.isEqual(hoy)) return false
+    val ini = horaTextoASql(horaInicioCampo.trim()) ?: return true
+    val iniMin = minutosDelDia(ini) ?: return true
+    val now = LocalTime.now()
+    val ahoraMin = now.hour * 60 + now.minute
+    return iniMin < ahoraMin
 }
 
 /** Reparte [total] en [n] partes iguales (centavos) para que la suma sea exacta. */

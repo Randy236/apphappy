@@ -4,6 +4,8 @@
 **Versión del documento:** 1.0  
 **Alcance:** validación funcional, integración app–API y comprobaciones básicas de seguridad/usabilidad en entornos de desarrollo y staging.
 
+> **Plan maestro formal (empresa / curso, estilo IEEE/ISO):** ver `PLAN_MAESTRO_PRUEBAS_SOFTWARE_HAPPY_JUMP.md`.
+
 ---
 
 ## 1. Objetivos
