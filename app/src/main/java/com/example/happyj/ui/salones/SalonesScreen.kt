@@ -60,7 +60,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -68,8 +67,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.happyj.data.ReservaSalonCreate
 import com.example.happyj.ui.util.horaTextoASql
@@ -77,6 +74,8 @@ import com.example.happyj.ui.util.minutosDelDia
 import com.example.happyj.ui.util.minutosAHoraSql
 import com.example.happyj.data.ReservaSalonDto
 import com.example.happyj.ui.components.BannerMensajeImportante
+import com.example.happyj.ui.components.FullscreenFormDialogScaffold
+import com.example.happyj.ui.components.HappyToggleOption
 import com.example.happyj.ui.components.NavegacionSemanaBar
 import com.example.happyj.ui.theme.AdelantoAmarillo
 import com.example.happyj.ui.theme.DisponibleGreen
@@ -790,42 +789,12 @@ private fun FormReservaSalonPantalla(
     var adelantoIngresado by remember { mutableStateOf("") }
     val scroll = rememberScrollState()
 
-    Dialog(
-        onDismissRequest = { if (!guardando) onDismiss() },
-        properties = DialogProperties(usePlatformDefaultWidth = false),
-    ) {
-        Box(Modifier.fillMaxSize()) {
-            Surface(Modifier.fillMaxSize(), color = Color.White) {
-                Column(Modifier.fillMaxSize()) {
-                Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 4.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    IconButton(
-                        onClick = onDismiss,
-                        enabled = !guardando,
-                    ) {
-                        Icon(
-                            Icons.AutoMirrored.Outlined.ArrowBack,
-                            "Volver",
-                            tint = if (guardando) Color(0xFFBDBDBD) else Color(0xFF1A1A2E),
-                        )
-                    }
-                    Text(
-                        "Nueva Reserva",
-                        Modifier.weight(1f),
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 18.sp,
-                    )
-                }
-                Column(
-                    Modifier
-                        .weight(1f)
-                        .verticalScroll(scroll)
-                        .padding(horizontal = 20.dp),
-                ) {
+    FullscreenFormDialogScaffold(
+        guardando = guardando,
+        onDismissRequest = onDismiss,
+        title = "Nueva Reserva",
+        scrollState = scroll,
+        content = {
                     Text("Detalles del Evento", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = HappyGreen)
                     Spacer(Modifier.height(12.dp))
                     Text("Nombre del cliente", fontSize = 13.sp, color = Color(0xFF757575))
@@ -843,8 +812,18 @@ private fun FormReservaSalonPantalla(
                     Text("Tipo de evento", fontSize = 13.sp, color = Color(0xFF757575))
                     Spacer(Modifier.height(8.dp))
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        SalonToggleChip("Cumpleaños", tipo == "Cumpleanos", Modifier.weight(1f)) { tipo = "Cumpleanos" }
-                        SalonToggleChip("Otro", tipo == "Otro", Modifier.weight(1f)) { tipo = "Otro" }
+                        HappyToggleOption(
+                            text = "Cumpleaños",
+                            selected = tipo == "Cumpleanos",
+                            modifier = Modifier.weight(1f),
+                            onClick = { tipo = "Cumpleanos" },
+                        )
+                        HappyToggleOption(
+                            text = "Otro",
+                            selected = tipo == "Otro",
+                            modifier = Modifier.weight(1f),
+                            onClick = { tipo = "Otro" },
+                        )
                     }
                     if (tipo == "Cumpleanos") {
                         Spacer(Modifier.height(12.dp))
@@ -946,12 +925,18 @@ private fun FormReservaSalonPantalla(
                     Text("Forma de pago", fontSize = 13.sp, color = Color(0xFF757575))
                     Spacer(Modifier.height(8.dp))
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        SalonToggleChip("Cancelado", modoPago == ModoPagoSalon.Cancelado, Modifier.weight(1f)) {
-                            modoPago = ModoPagoSalon.Cancelado
-                        }
-                        SalonToggleChip("Adelanto", modoPago == ModoPagoSalon.Adelanto, Modifier.weight(1f)) {
-                            modoPago = ModoPagoSalon.Adelanto
-                        }
+                        HappyToggleOption(
+                            text = "Cancelado",
+                            selected = modoPago == ModoPagoSalon.Cancelado,
+                            modifier = Modifier.weight(1f),
+                            onClick = { modoPago = ModoPagoSalon.Cancelado },
+                        )
+                        HappyToggleOption(
+                            text = "Adelanto",
+                            selected = modoPago == ModoPagoSalon.Adelanto,
+                            modifier = Modifier.weight(1f),
+                            onClick = { modoPago = ModoPagoSalon.Adelanto },
+                        )
                     }
                     if (modoPago == ModoPagoSalon.Adelanto) {
                         Spacer(Modifier.height(12.dp))
@@ -990,7 +975,8 @@ private fun FormReservaSalonPantalla(
                         }
                     }
                     Spacer(Modifier.height(24.dp))
-                }
+        },
+        bottomBar = {
                 Button(
                     onClick = {
                         if (guardando) return@Button
@@ -1040,54 +1026,6 @@ private fun FormReservaSalonPantalla(
                     Spacer(Modifier.width(8.dp))
                     Icon(Icons.AutoMirrored.Filled.ArrowForward, null, tint = Color.White)
                 }
-                }
-            }
-            if (guardando) {
-                Box(
-                    Modifier
-                        .fillMaxSize()
-                        .background(Color(0x99000000)),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        CircularProgressIndicator(color = HappyGreen)
-                        Spacer(Modifier.height(12.dp))
-                        Text(
-                            "Guardando reserva…",
-                            color = Color.White,
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 16.sp,
-                        )
-                        Text(
-                            "Puede tardar si la red va lenta",
-                            color = Color.White.copy(alpha = 0.88f),
-                            fontSize = 13.sp,
-                            modifier = Modifier.padding(top = 4.dp),
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun SalonToggleChip(
-    texto: String,
-    seleccionado: Boolean,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit,
-) {
-    val bg = if (seleccionado) Color.White else Color(0xFFE8F5E9)
-    Box(
-        modifier
-            .shadow(if (seleccionado) 4.dp else 0.dp, RoundedCornerShape(12.dp))
-            .clip(RoundedCornerShape(12.dp))
-            .background(bg)
-            .clickable(onClick = onClick)
-            .padding(vertical = 14.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(texto, fontWeight = if (seleccionado) FontWeight.Bold else FontWeight.Medium, color = Color(0xFF1A1A2E))
-    }
+        },
+    )
 }

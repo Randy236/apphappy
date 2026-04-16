@@ -26,7 +26,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.AddCircleOutline
 import androidx.compose.material.icons.outlined.AccessTime
@@ -72,6 +71,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.happyj.data.ReservaCanchaCreate
 import com.example.happyj.data.ReservaCanchaDto
 import com.example.happyj.ui.components.BannerMensajeImportante
+import com.example.happyj.ui.components.FullscreenFormDialogScaffold
+import com.example.happyj.ui.components.HappyToggleOption
 import com.example.happyj.ui.components.NavegacionSemanaBar
 import com.example.happyj.ui.theme.AdelantoAmarillo
 import com.example.happyj.ui.theme.DisponibleGreen
@@ -89,6 +90,7 @@ import com.example.happyj.ui.util.formatearDuracionTotalCancha
 import com.example.happyj.ui.util.duracionReservaCanchaMinutos
 import com.example.happyj.ui.util.franjasCanchaEntreDetalle
 import com.example.happyj.ui.util.franjasCanchaEntre
+import com.example.happyj.ui.util.inicioTurnoCanchaEsPasado
 import com.example.happyj.ui.util.mensajeRangoCanchaInvalido
 import com.example.happyj.ui.util.sugerenciaInicioFinCancha
 import com.example.happyj.ui.util.normalizarHoraApi
@@ -457,12 +459,12 @@ fun CanchaScreen(
                     modifier = Modifier.size(20.dp),
                 )
                 Text(
-                    text = "Toca un horario abajo (:00 / :30).",
+                    text = "Grilla :00/:30. «Otra hora»: cualquier minuto desde ahora (ej. 12:15–12:45).",
                     modifier = Modifier.weight(1f),
                     fontSize = 12.sp,
                     lineHeight = 15.sp,
                     color = Color(0xFF33691E),
-                    maxLines = 2,
+                    maxLines = 3,
                 )
                 Button(
                     onClick = {
@@ -551,17 +553,11 @@ fun CanchaScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp, vertical = 2.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            TextButton(onClick = { viewModel.irDiaAnterior() }) {
-                Text("← Día ant.", color = HappyGreen, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
-            }
             TextButton(onClick = { viewModel.irHoy() }) {
                 Text("Ir a hoy", color = HappyGreen, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-            }
-            TextButton(onClick = { viewModel.irDiaSiguiente() }) {
-                Text("Día sig. →", color = HappyGreen, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
             }
         }
 
@@ -1109,44 +1105,12 @@ private fun FormReservaCanchaDialog(
     var errorHorario by remember { mutableStateOf<String?>(null) }
     val scroll = rememberScrollState()
 
-    Dialog(
-        onDismissRequest = { if (!guardando) onDismiss() },
-        properties = DialogProperties(usePlatformDefaultWidth = false),
-    ) {
-        Box(Modifier.fillMaxSize()) {
-            Surface(modifier = Modifier.fillMaxSize(), color = Color.White) {
-                Column(modifier = Modifier.fillMaxSize()) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 4.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    IconButton(
-                        onClick = onDismiss,
-                        enabled = !guardando,
-                    ) {
-                        Icon(
-                            Icons.AutoMirrored.Outlined.ArrowBack,
-                            contentDescription = "Volver",
-                            tint = if (guardando) Color(0xFFBDBDBD) else Color(0xFF1A1A2E),
-                        )
-                    }
-                    Text(
-                        text = "Registrar Reserva",
-                        modifier = Modifier.weight(1f),
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 18.sp,
-                        color = Color(0xFF1A1A2E),
-                    )
-                }
-
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .verticalScroll(scroll)
-                        .padding(horizontal = 20.dp),
-                ) {
+    FullscreenFormDialogScaffold(
+        guardando = guardando,
+        onDismissRequest = onDismiss,
+        title = "Registrar Reserva",
+        scrollState = scroll,
+        content = {
                     Text(
                         "Fecha",
                         fontSize = 13.sp,
@@ -1235,15 +1199,15 @@ private fun FormReservaCanchaDialog(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        DeporteOpcion(
-                            texto = "Fútbol",
-                            seleccionado = deporte == "Futbol",
+                        HappyToggleOption(
+                            text = "Fútbol",
+                            selected = deporte == "Futbol",
                             modifier = Modifier.weight(1f),
                             onClick = { deporte = "Futbol" },
                         )
-                        DeporteOpcion(
-                            texto = "Vóley",
-                            seleccionado = deporte == "Voley",
+                        HappyToggleOption(
+                            text = "Vóley",
+                            selected = deporte == "Voley",
                             modifier = Modifier.weight(1f),
                             onClick = { deporte = "Voley" },
                         )
@@ -1338,8 +1302,8 @@ private fun FormReservaCanchaDialog(
                         }
                     }
                     Spacer(Modifier.height(24.dp))
-                }
-
+        },
+        bottomBar = {
                 Button(
                     onClick = {
                         if (guardando) return@Button
@@ -1363,9 +1327,9 @@ private fun FormReservaCanchaDialog(
                             errorHorario = "Revisa las horas: no se pudo armar el turno."
                             return@Button
                         }
-                        if (franjas.any { esSlotPasado(fechaSel, it.horaInicioSql) }) {
+                        if (inicioTurnoCanchaEsPasado(fechaSel, horaIniText)) {
                             errorHorario =
-                                "Algún tramo cae en horario ya pasado. Ajusta la hora de inicio o elige otro día."
+                                "La hora de inicio ya pasó. Pon una hora desde este minuto en adelante."
                             return@Button
                         }
                         val n = franjas.size
@@ -1396,35 +1360,8 @@ private fun FormReservaCanchaDialog(
                     Spacer(Modifier.width(8.dp))
                     Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = Color.White)
                 }
-                }
-            }
-            if (guardando) {
-                Box(
-                    Modifier
-                        .fillMaxSize()
-                        .background(Color(0x99000000)),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        CircularProgressIndicator(color = HappyGreen)
-                        Spacer(Modifier.height(12.dp))
-                        Text(
-                            "Guardando reserva…",
-                            color = Color.White,
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 16.sp,
-                        )
-                        Text(
-                            "Puede tardar si la red va lenta",
-                            color = Color.White.copy(alpha = 0.88f),
-                            fontSize = 13.sp,
-                            modifier = Modifier.padding(top = 4.dp),
-                        )
-                    }
-                }
-            }
-        }
-    }
+        },
+    )
 }
 
 @Composable
@@ -1446,31 +1383,6 @@ private fun InfoCaja(
             icon()
             Text(texto, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = Color(0xFF1A1A2E))
         }
-    }
-}
-
-@Composable
-private fun DeporteOpcion(
-    texto: String,
-    seleccionado: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val bg = if (seleccionado) Color.White else Color(0xFFE8F5E9)
-    Box(
-        modifier = modifier
-            .shadow(if (seleccionado) 4.dp else 0.dp, RoundedCornerShape(12.dp))
-            .clip(RoundedCornerShape(12.dp))
-            .background(bg)
-            .clickable(onClick = onClick)
-            .padding(vertical = 14.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            texto,
-            fontWeight = if (seleccionado) FontWeight.Bold else FontWeight.Medium,
-            color = Color(0xFF1A1A2E),
-        )
     }
 }
 
