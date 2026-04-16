@@ -8,7 +8,12 @@ import { pool } from "./db.js";
 dotenv.config();
 
 const PORT = Number(process.env.PORT || 3000);
-const JWT_SECRET = process.env.JWT_SECRET || "dev_secret_cambiar";
+const isProd = process.env.NODE_ENV === "production";
+const JWT_SECRET = process.env.JWT_SECRET || (isProd ? null : "dev_secret_cambiar");
+if (!JWT_SECRET) {
+  console.error("Falta JWT_SECRET en entorno (obligatorio en producción).");
+  process.exit(1);
+}
 
 const SALONES_VALIDOS = [
   "Ex Salón de Pinturas",

@@ -5,15 +5,10 @@
 -->
 <data-extraction-rules>
     <cloud-backup>
-        <!-- TODO: Use <include> and <exclude> to control what is backed up.
-        <include .../>
-        <exclude .../>
-        -->
+        <!-- DataStore de sesión (token): no subir a respaldo en la nube -->
+        <exclude domain="file" path="datastore/session.preferences_pb" />
     </cloud-backup>
-    <!--
     <device-transfer>
-        <include .../>
-        <exclude .../>
+        <exclude domain="file" path="datastore/session.preferences_pb" />
     </device-transfer>
-    -->
 </data-extraction-rules>
