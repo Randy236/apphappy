@@ -29,11 +29,12 @@ jobs:
       - name: Gradle (cache)
         uses: gradle/actions/setup-gradle@v4
 
+      # Más heap que gradle.properties local (1536m) evita que el daemon muera en CI al compilar + tests.
       - name: Pruebas unitarias + informe JaCoCo
-        run: chmod +x gradlew && ./gradlew :app:testDebugUnitTest :app:jacocoTestReport --no-daemon
+        run: chmod +x gradlew && ./gradlew -Dorg.gradle.jvmargs="-Xmx2560m -XX:MaxMetaspaceSize=512m -Dfile.encoding=UTF-8" :app:testDebugUnitTest :app:jacocoTestReport --no-daemon
 
       - name: Análisis SonarCloud
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: ./gradlew sonar --no-daemon
+        run: ./gradlew -Dorg.gradle.jvmargs="-Xmx2560m -XX:MaxMetaspaceSize=512m -Dfile.encoding=UTF-8" sonar --no-daemon
