@@ -1,0 +1,39 @@
+# Cobertura en SonarCloud: corre tests + JaCoCo y luego envía el XML.
+# 1) En SonarCloud: Account → Security → genera un token (Analysis / SonarQube Cloud).
+# 2) En GitHub del repo: Settings → Secrets → Actions → SONAR_TOKEN
+# 3) Si el análisis falla por "project key", edita sonar-project.properties con los valores
+#    exactos de: SonarCloud → proyecto → Administration → Update Key
+name: SonarCloud
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  sonar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Gradle (cache)
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Pruebas unitarias + informe JaCoCo
+        run: chmod +x gradlew && ./gradlew :app:testDebugUnitTest :app:jacocoTestReport --no-daemon
+
+      - name: Análisis SonarCloud
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: ./gradlew sonar --no-daemon
