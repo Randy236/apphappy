@@ -706,7 +706,7 @@ private fun CanchaSlotItemFila(
 }
 
 @Composable
-private fun CanchaLazyListaFilasHorarios(
+private fun ColumnScope.CanchaLazyListaFilasHorarios(
     filasGrilla: List<FilaGrillaCancha>,
     fecha: LocalDate,
     listState: LazyListState,
@@ -735,6 +735,93 @@ private fun CanchaLazyListaFilasHorarios(
 }
 
 @Composable
+private fun DialogoDetalleGrupoTitulo(cancelada: Boolean, variasFranjas: Boolean) {
+    Text(
+        when {
+            cancelada -> "Reserva cancelada"
+            variasFranjas -> "Reserva (un solo turno)"
+            else -> "Reserva"
+        },
+    )
+}
+
+@Composable
+private fun DialogoDetalleGrupoTextoColumn(
+    g: GrupoTurnoCancha,
+    rep: ReservaCanchaDto,
+    cancelada: Boolean,
+    variasFranjas: Boolean,
+    saldoPend: Boolean,
+    saldoTotal: Double,
+) {
+    Column {
+        Text("Cliente: ${rep.nombreCliente}")
+        Text("Deporte: ${etiquetaDeporte(rep.deporte)}")
+        Text("Hora: ${g.horaInicioTexto} – ${g.horaFinTexto}")
+        if (variasFranjas) {
+            Text(
+                "${g.segmentos.size} franjas contiguas · un solo turno de juego",
+                fontSize = 12.sp,
+                color = HappyTextSecondary,
+                modifier = Modifier.padding(top = 4.dp),
+            )
+        }
+        Text("Total: S/ ${"%.2f".format(g.montoTotalAcumulado)}")
+        Text("Adelanto: S/ ${"%.2f".format(g.adelantoAcumulado)}")
+        Text("Estado: ${rep.estado}")
+        if (cancelada) {
+            Spacer(Modifier.height(8.dp))
+            Text(
+                "Motivo (cliente): ${rep.motivoCancelacion ?: "—"}",
+                color = Color(0xFF795548),
+                fontSize = 13.sp,
+            )
+        }
+        if (saldoPend) {
+            Spacer(Modifier.height(8.dp))
+            Text(
+                "Saldo pendiente: S/ ${"%.2f".format(saldoTotal)}",
+                color = Color(0xFF795548),
+                fontWeight = FontWeight.SemiBold,
+            )
+        }
+    }
+}
+
+@Composable
+private fun DialogoDetalleGrupoBotonCobrar(
+    saldoPend: Boolean,
+    idsSaldo: List<Int>,
+    viewModel: CanchaViewModel,
+    onCerrar: () -> Unit,
+) {
+    if (!saldoPend) return
+    TextButton(
+        onClick = {
+            viewModel.cobrarSaldoGrupoCancha(idsSaldo) { onCerrar() }
+        },
+    ) {
+        Text("Marcar como pagado", color = HappyGreen, fontWeight = FontWeight.Bold)
+    }
+}
+
+@Composable
+private fun DialogoDetalleGrupoBotonesConfirmar(
+    cancelada: Boolean,
+    onPedirCancelar: () -> Unit,
+    onCerrar: () -> Unit,
+) {
+    Row {
+        if (!cancelada) {
+            TextButton(onClick = onPedirCancelar) {
+                Text("Cancelar reserva", color = MaterialTheme.colorScheme.error)
+            }
+        }
+        TextButton(onClick = onCerrar) { Text("Cerrar") }
+    }
+}
+
+@Composable
 private fun DialogoDetalleGrupoCancha(
     g: GrupoTurnoCancha,
     viewModel: CanchaViewModel,
@@ -746,76 +833,27 @@ private fun DialogoDetalleGrupoCancha(
     val saldoPend = !cancelada && g.segmentos.any { it.adelanto < it.montoTotal - 1e-6 }
     val saldoTotal = g.montoTotalAcumulado - g.adelantoAcumulado
     val variasFranjas = g.segmentos.size > 1
+    val idsSaldo = remember(g.segmentos, saldoPend) {
+        if (!saldoPend) emptyList()
+        else g.segmentos.filter { it.adelanto < it.montoTotal - 1e-6 }.map { it.id }
+    }
     AlertDialog(
         onDismissRequest = onCerrar,
-        title = {
-            Text(
-                when {
-                    cancelada -> "Reserva cancelada"
-                    variasFranjas -> "Reserva (un solo turno)"
-                    else -> "Reserva"
-                },
+        title = { DialogoDetalleGrupoTitulo(cancelada, variasFranjas) },
+        text = {
+            DialogoDetalleGrupoTextoColumn(
+                g, rep, cancelada, variasFranjas, saldoPend, saldoTotal,
             )
         },
-        text = {
-            Column {
-                Text("Cliente: ${rep.nombreCliente}")
-                Text("Deporte: ${etiquetaDeporte(rep.deporte)}")
-                Text("Hora: ${g.horaInicioTexto} – ${g.horaFinTexto}")
-                if (variasFranjas) {
-                    Text(
-                        "${g.segmentos.size} franjas contiguas · un solo turno de juego",
-                        fontSize = 12.sp,
-                        color = HappyTextSecondary,
-                        modifier = Modifier.padding(top = 4.dp),
-                    )
-                }
-                Text("Total: S/ ${"%.2f".format(g.montoTotalAcumulado)}")
-                Text("Adelanto: S/ ${"%.2f".format(g.adelantoAcumulado)}")
-                Text("Estado: ${rep.estado}")
-                if (cancelada) {
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        "Motivo (cliente): ${rep.motivoCancelacion ?: "—"}",
-                        color = Color(0xFF795548),
-                        fontSize = 13.sp,
-                    )
-                }
-                if (saldoPend) {
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        "Saldo pendiente: S/ ${"%.2f".format(saldoTotal)}",
-                        color = Color(0xFF795548),
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                }
-            }
-        },
         dismissButton = {
-            if (saldoPend) {
-                val idsSaldo = g.segmentos
-                    .filter { it.adelanto < it.montoTotal - 1e-6 }
-                    .map { it.id }
-                TextButton(
-                    onClick = {
-                        viewModel.cobrarSaldoGrupoCancha(idsSaldo) { onCerrar() }
-                    },
-                ) {
-                    Text("Marcar como pagado", color = HappyGreen, fontWeight = FontWeight.Bold)
-                }
-            }
+            DialogoDetalleGrupoBotonCobrar(saldoPend, idsSaldo, viewModel, onCerrar)
         },
         confirmButton = {
-            Row {
-                if (!cancelada) {
-                    TextButton(
-                        onClick = { onPedirCancelar(g) },
-                    ) {
-                        Text("Cancelar reserva", color = MaterialTheme.colorScheme.error)
-                    }
-                }
-                TextButton(onClick = onCerrar) { Text("Cerrar") }
-            }
+            DialogoDetalleGrupoBotonesConfirmar(
+                cancelada,
+                onPedirCancelar = { onPedirCancelar(g) },
+                onCerrar = onCerrar,
+            )
         },
     )
 }
@@ -826,7 +864,8 @@ private fun DialogoCancelarReservaGrupo(
     viewModel: CanchaViewModel,
     onCerrar: () -> Unit,
 ) {
-    var motivo by remember(gc.ids) { mutableStateOf("") }
+    val claveDialogoCancelar = gc.segmentos.joinToString("-") { "${it.id}" }
+    var motivo by remember(claveDialogoCancelar) { mutableStateOf("") }
     val motivoOk = motivo.trim().length >= 2
     val varias = gc.segmentos.size > 1
     AlertDialog(
