@@ -12,7 +12,7 @@
 |--------|--------|
 | **Identificador** | TP-HAPPYJUMP-2026-001 |
 | **Proyecto** | Happy Jump — sistema de reservas y operación en centro de entretenimiento |
-| **Documentos de referencia** | `REQUERIMIENTOS.csv`, `CASOS_DE_PRUEBA.csv`, `MATRIZ_ACTIVIDADES_REQUERIMIENTOS.csv`, `PLAN_DE_PRUEBAS.md` (resumen operativo) |
+| **Documentos de referencia** | `REQUERIMIENTOS.csv`, `CASOS_DE_PRUEBA.csv`, `MATRIZ_ACTIVIDADES_REQUERIMIENTOS.csv`, `PLAN_DE_PRUEBAS.md` (resumen operativo), `EVIDENCIAS_CALIDAD_SONAR_SNYK.md` (SonarCloud, Snyk, CI, unit tests) |
 | **Autor principal** | Equipo de desarrollo / responsable de calidad del proyecto |
 | **Revisor sugerido** | Profesor del curso / arquitecto de software |
 | **Aprobador sugerido** | Product owner / representante de la empresa |
@@ -25,6 +25,7 @@
 |---------|--------|--------|-------------|
 | 0.1 | 14/04/2026 | Proyecto Happy Jump | Borrador: alcance, estrategia, niveles de prueba |
 | 1.0 | 14/04/2026 | Proyecto Happy Jump | Versión para entrega académica: ambientes, defectos, métricas, trazabilidad |
+| 1.1 | 22/04/2026 | Proyecto Happy Jump | CI SonarCloud + Snyk, ampliación de pruebas unitarias, documento `EVIDENCIAS_CALIDAD_SONAR_SNYK.md` |
 
 ---
 
@@ -95,7 +96,7 @@ Este plan define **qué** se prueba, **cómo** y **con qué criterios** en el si
 | Plan operativo resumido | `docs/PLAN_DE_PRUEBAS.md` |
 | Código fuente app | `app/` |
 | Código fuente API | `server/` |
-| Pruebas unitarias (ejemplo) | `app/src/test/java/com/example/happyj/ExampleUnitTest.kt` |
+| Pruebas unitarias (JVM) | `app/src/test/java/com/example/happyj/ExampleUnitTest.kt`, `.../ui/util/TimeUtilTest.kt`, `CanchaGrupoTurnoTest.kt`, `CanchaDisponibilidadCalendarioTest.kt` |
 
 ---
 
@@ -124,7 +125,8 @@ Este plan define **qué** se prueba, **cómo** y **con qué criterios** en el si
 ### 2.3. Pruebas estáticas
 
 - **Revisión de código** y análisis con **SonarQube Cloud** sobre el repositorio `apphappy` (Kotlin/XML), como complemento a las pruebas dinámicas: seguridad, confiabilidad, mantenibilidad, duplicación.
-- **Documentación:** coherencia entre requisitos, matriz y casos de prueba.
+- **Dependencias:** escaneo con **Snyk** en GitHub Actions (`snyk test --all-projects`, umbral *medium*), complementario a SonarCloud.
+- **Documentación:** coherencia entre requisitos, matriz y casos de prueba; bitácora de hallazgos y correcciones en `EVIDENCIAS_CALIDAD_SONAR_SNYK.md`.
 
 ### 2.4. Pruebas de regresión
 
@@ -197,8 +199,8 @@ Nuevo → Asignado → En corrección → Verificado → Cerrado (o Reabierto si
 
 ### 5.3. Pipeline CI/CD y quality gates
 
-- **Estado actual:** integración continua completa puede ser una **mejora futura**; el análisis en **SonarQube Cloud** aporta visibilidad de calidad sobre el código.
-- **Objetivo:** definir quality gate (ej. 0 vulnerabilidades altas, revisión de hotspots) cuando se formalice CI.
+- **Estado actual:** en GitHub Actions se ejecutan **pruebas unitarias + JaCoCo**, análisis **SonarCloud** y escaneo **Snyk** en ramas `main` y `develop` (y PRs), con secretos `SONAR_TOKEN` y `SNYK_TOKEN`.
+- **Objetivo:** mantener quality gate en SonarCloud y revisar hotspots de seguridad; registrar métricas y capturas en `EVIDENCIAS_CALIDAD_SONAR_SNYK.md` por entrega.
 
 ---
 
@@ -219,6 +221,8 @@ Nuevo → Asignado → En corrección → Verificado → Cerrado (o Reabierto si
 | Gradle (`gradlew test`) | Pruebas unitarias JVM |
 | Postman / cURL / navegador | API, endpoint `/health` |
 | SonarQube Cloud | Análisis estático |
+| Snyk | Vulnerabilidades en dependencias Gradle |
+| GitHub Actions | CI: tests, JaCoCo, Sonar, Snyk |
 | Git / GitHub | Control de versiones y trazabilidad |
 
 ---
@@ -230,7 +234,7 @@ Nuevo → Asignado → En corrección → Verificado → Cerrado (o Reabierto si
 | **Inicio** | Configurar entorno, smoke login y API |
 | **Núcleo** | Ejecutar CP cancha y salones; registrar defectos |
 | **Regresión** | Tras correcciones; CP-014 o equivalente |
-| **Cierre** | Entrega de evidencias (matriz, casos, plan maestro, capturas Sonar si aplica) |
+| **Cierre** | Entrega de evidencias (matriz, casos, plan maestro, `EVIDENCIAS_CALIDAD_SONAR_SNYK.md`, capturas Sonar/Snyk/Actions) |
 
 ### Hitos de calidad sugeridos
 
@@ -250,7 +254,8 @@ Nuevo → Asignado → En corrección → Verificado → Cerrado (o Reabierto si
 
 ### 8.2. Métricas de producto (complementarias)
 
-- Indicadores SonarCloud (bugs, vulnerabilidades, code smells, duplicación) como seguimiento de mantenibilidad y seguridad estática.
+- Indicadores SonarCloud (bugs, vulnerabilidades, code smells, duplicación, cobertura vía JaCoCo) como seguimiento de mantenibilidad y seguridad estática.
+- Informe Snyk (dependencias) y resultado de jobs en GitHub Actions como evidencia de auditoría reproducible.
 
 ---
 
@@ -259,7 +264,7 @@ Nuevo → Asignado → En corrección → Verificado → Cerrado (o Reabierto si
 - **Requisitos:** `REQUERIMIENTOS.csv` (REQ-001 …).  
 - **Casos de prueba:** `CASOS_DE_PRUEBA.csv` (CP-001 …).  
 - **Matriz proceso–RF–CUS:** `MATRIZ_ACTIVIDADES_REQUERIMIENTOS.csv`.  
-- **Pruebas unitarias de ejemplo:** lógica de horarios y franjas en `ExampleUnitTest.kt`.
+- **Pruebas unitarias:** horarios, franjas, fechas API, agrupación de turnos y semáforo de calendario en `ExampleUnitTest.kt` y tests bajo `app/src/test/.../ui/util/`.
 
 ---
 

@@ -2,6 +2,12 @@
 
 Aplicacion movil Android para gestion de reservas de cancha y salones, con roles de trabajador y administrador.
 
+## Calidad (CI)
+
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=Randy236_apphappy&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=Randy236_apphappy)
+
+En GitHub Actions: análisis **SonarCloud** (tests + JaCoCo) y **Snyk** en dependencias. Requiere secretos `SONAR_TOKEN` y `SNYK_TOKEN`. Detalle y plantilla para evidencias académicas: [`docs/EVIDENCIAS_CALIDAD_SONAR_SNYK.md`](docs/EVIDENCIAS_CALIDAD_SONAR_SNYK.md).
+
 ## Stack
 
 - Android: Kotlin + Jetpack Compose
@@ -102,4 +108,6 @@ Tipos recomendados de commit:
 ## Material para curso
 
 - Checklist de despliegue y testing: `docs/DESPLIEGUE_Y_PRUEBAS_CHECKLIST.md`
+- Entrega calidad / Sonar / Snyk / unit tests: `docs/EVIDENCIAS_CALIDAD_SONAR_SNYK.md`
+- Checklist profesor (ítems 2–5): `docs/CHECKLIST_ENTREGA_PROFESOR.md`
 

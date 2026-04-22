@@ -104,6 +104,21 @@ fun slotsCanchaParaFecha(@Suppress("UNUSED_PARAMETER") fecha: LocalDate): List<S
 }
 
 /**
+ * Minutos del siguiente tramo de cancha desde [inicioMin] hasta [finMin] (exclusivo), o null si no encaja en reglas :00/:30.
+ */
+private fun duracionSiguienteTramoCancha(inicioMin: Int, finMin: Int): Int? {
+    val remaining = finMin - inicioMin
+    if (remaining < 30) return null
+    val mmPart = inicioMin % 60
+    return when {
+        remaining == 30 -> 30
+        mmPart == 30 -> 30
+        remaining >= 60 -> 60
+        else -> null
+    }
+}
+
+/**
  * Parte el rango [horaInicio, horaFin) en tramos de 30 o 60 min hasta cubrirlo exactamente
  * (ej. 11:00–13:30 → 11:00 60 min + 12:00 60 min + 13:00 30 min).
  */
@@ -118,18 +133,9 @@ fun franjasCanchaEntreDetalle(
     val out = mutableListOf<FranjaCancha>()
     var t = a
     while (t < b) {
-        val remaining = b - t
-        if (remaining < 30) return emptyList()
-        val slotSql = minutosAHoraSql(t)
-        val mmPart = t % 60
-        val d = when {
-            remaining == 30 -> 30
-            mmPart == 30 -> 30
-            remaining >= 60 -> 60
-            else -> return emptyList()
-        }
+        val d = duracionSiguienteTramoCancha(t, b) ?: return emptyList()
         if (t + d > b) return emptyList()
-        out.add(FranjaCancha(slotSql, d))
+        out.add(FranjaCancha(minutosAHoraSql(t), d))
         t += d
     }
     return out

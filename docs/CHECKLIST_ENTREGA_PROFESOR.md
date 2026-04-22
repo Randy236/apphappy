@@ -33,6 +33,17 @@
 
 ---
 
+## 5. Calidad — SonarCloud, Snyk, unit tests
+
+| Archivo / acción | Uso |
+|------------------|-----|
+| `docs/EVIDENCIAS_CALIDAD_SONAR_SNYK.md` | Plantilla profesional: enlaces, secretos GitHub, tablas para pegar métricas y bitácora de correcciones. |
+| GitHub → **Actions** | Capturas de jobs *SonarCloud* y *Snyk Security* como evidencia. |
+| SonarCloud / Snyk (web) | Capturas del *Quality Gate* y del informe de vulnerabilidades (última clase / entrega). |
+| `./gradlew :app:testDebugUnitTest :app:jacocoTestReport` | Reproducir tests y cobertura local. |
+
+---
+
 ## Resumen rápido
 
 | Ítem | Estado |
@@ -40,3 +51,4 @@
 | 2. Prototipos | **Pendiente:** agregar `docs/prototipos/` con capturas o PDF. |
 | 3. Plan de pruebas | **Listo:** `PLAN_MAESTRO_PRUEBAS_SOFTWARE_HAPPY_JUMP.md` |
 | 4. Casos de prueba | **Listo:** `CASOS_DE_PRUEBA.csv` |
+| 5. Sonar / Snyk / auditoría | **Listo (plantilla + CI):** `EVIDENCIAS_CALIDAD_SONAR_SNYK.md` — completar tablas con números reales antes de entregar. |
