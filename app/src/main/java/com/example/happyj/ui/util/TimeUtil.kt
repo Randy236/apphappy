@@ -103,19 +103,38 @@ fun slotsCanchaParaFecha(@Suppress("UNUSED_PARAMETER") fecha: LocalDate): List<S
     return out
 }
 
-/**
- * Minutos del siguiente tramo de cancha desde [inicioMin] hasta [finMin] (exclusivo), o null si no encaja en reglas :00/:30.
- */
+/** Reglas :00 / :30 para el tramo siguiente; sin `when` para mantener baja complejidad cognitiva (Sonar). */
+private fun duracionTramoSegunRestante(minutosEnPuntoDelSlot: Int, minutosRestantes: Int): Int? {
+    if (minutosRestantes == 30) return 30
+    if (minutosEnPuntoDelSlot == 30) return 30
+    if (minutosRestantes >= 60) return 60
+    return null
+}
+
 private fun duracionSiguienteTramoCancha(inicioMin: Int, finMin: Int): Int? {
     val remaining = finMin - inicioMin
     if (remaining < 30) return null
-    val mmPart = inicioMin % 60
-    return when {
-        remaining == 30 -> 30
-        mmPart == 30 -> 30
-        remaining >= 60 -> 60
-        else -> null
+    return duracionTramoSegunRestante(inicioMin % 60, remaining)
+}
+
+private fun pasoSiguienteFranja(
+    t: Int,
+    finExclusivo: Int,
+    acum: MutableList<FranjaCancha>,
+): Int? {
+    val d = duracionSiguienteTramoCancha(t, finExclusivo) ?: return null
+    if (t + d > finExclusivo) return null
+    acum.add(FranjaCancha(minutosAHoraSql(t), d))
+    return t + d
+}
+
+private fun construirFranjasDesdeHasta(inicioMin: Int, finExclusivo: Int): List<FranjaCancha> {
+    val out = mutableListOf<FranjaCancha>()
+    var t = inicioMin
+    while (t < finExclusivo) {
+        t = pasoSiguienteFranja(t, finExclusivo, out) ?: return emptyList()
     }
+    return out
 }
 
 /**
@@ -127,18 +146,10 @@ fun franjasCanchaEntreDetalle(
     horaFin: String,
     @Suppress("UNUSED_PARAMETER") fecha: LocalDate,
 ): List<FranjaCancha> {
-    val a = minutosDelDia(horaInicio) ?: return emptyList()
-    val b = minutosDelDia(horaFin) ?: return emptyList()
-    if (b <= a) return emptyList()
-    val out = mutableListOf<FranjaCancha>()
-    var t = a
-    while (t < b) {
-        val d = duracionSiguienteTramoCancha(t, b) ?: return emptyList()
-        if (t + d > b) return emptyList()
-        out.add(FranjaCancha(minutosAHoraSql(t), d))
-        t += d
-    }
-    return out
+    val inicio = minutosDelDia(horaInicio) ?: return emptyList()
+    val fin = minutosDelDia(horaFin) ?: return emptyList()
+    if (fin <= inicio) return emptyList()
+    return construirFranjasDesdeHasta(inicio, fin)
 }
 
 fun franjasCanchaEntre(
