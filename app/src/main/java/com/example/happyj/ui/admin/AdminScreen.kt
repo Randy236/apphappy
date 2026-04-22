@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -331,6 +332,133 @@ fun AdminScreen(
 }
 
 @Composable
+private fun DialogoCancelacionesEncabezado(
+    cancelaciones: CancelacionesReporteResponse?,
+    onCerrar: () -> Unit,
+) {
+    Row(
+        Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(
+                "Cancelaciones",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = TextoTitulo,
+            )
+            cancelaciones?.rango?.let { rg ->
+                Text(
+                    "${rg.inicio} → ${rg.fin}",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = Color(0xFF757575),
+                )
+            }
+        }
+        TextButton(onClick = onCerrar) { Text("Cerrar") }
+    }
+}
+
+@Composable
+private fun ColumnScope.DialogoCancelacionesIndicadorCarga() {
+    CircularProgressIndicator(
+        Modifier
+            .align(Alignment.CenterHorizontally)
+            .padding(24.dp),
+        color = HappyGreen,
+    )
+}
+
+@Composable
+private fun ColumnScope.DialogoCancelacionesMensajeError(
+    error: String,
+    onVolverACargar: () -> Unit,
+) {
+    BannerMensajeImportante(
+        titulo = "No se pudo cargar",
+        mensaje = error,
+        modifier = Modifier.padding(bottom = 8.dp),
+    )
+    TextButton(
+        onClick = onVolverACargar,
+        modifier = Modifier.align(Alignment.CenterHorizontally),
+    ) {
+        Text("Reintentar", color = HappyGreen, fontWeight = FontWeight.SemiBold)
+    }
+}
+
+@Composable
+private fun ListaCancelacionesReporteLazy(data: CancelacionesReporteResponse) {
+    LazyColumn(
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+        modifier = Modifier.heightIn(max = 400.dp),
+    ) {
+        if (data.cancha.isNotEmpty()) {
+            item {
+                Text(
+                    "Cancha",
+                    fontWeight = FontWeight.Bold,
+                    color = AzulCancha,
+                    fontSize = 15.sp,
+                )
+            }
+            items(data.cancha) { row ->
+                TarjetaCancelacionCancha(row)
+            }
+        }
+        if (data.salones.isNotEmpty()) {
+            item {
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    "Salones",
+                    fontWeight = FontWeight.Bold,
+                    color = NaranjaPrincipal,
+                    fontSize = 15.sp,
+                )
+            }
+            items(data.salones) { row ->
+                TarjetaCancelacionSalon(row)
+            }
+        }
+    }
+}
+
+@Composable
+private fun ColumnScope.DialogoCancelacionesCuerpoLista(
+    cancelaciones: CancelacionesReporteResponse,
+    error: String?,
+) {
+    val vacio = cancelaciones.cancha.isEmpty() && cancelaciones.salones.isEmpty()
+    if (vacio && error == null) {
+        Text(
+            "No hay cancelaciones registradas en este rango de fechas.",
+            color = Color(0xFF757575),
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.padding(vertical = 16.dp),
+        )
+        return
+    }
+    if (error != null) return
+    ListaCancelacionesReporteLazy(cancelaciones)
+}
+
+@Composable
+private fun ColumnScope.DialogoCancelacionesContenidoPrincipal(
+    cancelacionesLoading: Boolean,
+    cancelaciones: CancelacionesReporteResponse?,
+    error: String?,
+    onVolverACargar: () -> Unit,
+) {
+    if (cancelacionesLoading) {
+        DialogoCancelacionesIndicadorCarga()
+        return
+    }
+    error?.let { DialogoCancelacionesMensajeError(it, onVolverACargar) }
+    cancelaciones?.let { DialogoCancelacionesCuerpoLista(it, error) }
+}
+
+@Composable
 private fun DialogoCancelacionesAdmin(
     cancelacionesLoading: Boolean,
     cancelaciones: CancelacionesReporteResponse?,
@@ -348,95 +476,14 @@ private fun DialogoCancelacionesAdmin(
                 .heightIn(max = 560.dp),
         ) {
             Column(Modifier.padding(20.dp)) {
-                Row(
-                    Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(Modifier.weight(1f)) {
-                        Text(
-                            "Cancelaciones",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = TextoTitulo,
-                        )
-                        cancelaciones?.rango?.let { rg ->
-                            Text(
-                                "${rg.inicio} → ${rg.fin}",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = Color(0xFF757575),
-                            )
-                        }
-                    }
-                    TextButton(onClick = onCerrar) { Text("Cerrar") }
-                }
+                DialogoCancelacionesEncabezado(cancelaciones, onCerrar)
                 Spacer(Modifier.height(8.dp))
-                if (cancelacionesLoading) {
-                    CircularProgressIndicator(
-                        Modifier
-                            .align(Alignment.CenterHorizontally)
-                            .padding(24.dp),
-                        color = HappyGreen,
-                    )
-                } else {
-                    error?.let {
-                        BannerMensajeImportante(
-                            titulo = "No se pudo cargar",
-                            mensaje = it,
-                            modifier = Modifier.padding(bottom = 8.dp),
-                        )
-                        TextButton(
-                            onClick = onVolverACargar,
-                            modifier = Modifier.align(Alignment.CenterHorizontally),
-                        ) {
-                            Text("Reintentar", color = HappyGreen, fontWeight = FontWeight.SemiBold)
-                        }
-                    }
-                    cancelaciones?.let { data ->
-                        val vacio = data.cancha.isEmpty() && data.salones.isEmpty()
-                        if (vacio && error == null) {
-                            Text(
-                                "No hay cancelaciones registradas en este rango de fechas.",
-                                color = Color(0xFF757575),
-                                style = MaterialTheme.typography.bodyMedium,
-                                modifier = Modifier.padding(vertical = 16.dp),
-                            )
-                        } else if (error == null) {
-                            LazyColumn(
-                                verticalArrangement = Arrangement.spacedBy(10.dp),
-                                modifier = Modifier.heightIn(max = 400.dp),
-                            ) {
-                                if (data.cancha.isNotEmpty()) {
-                                    item {
-                                        Text(
-                                            "Cancha",
-                                            fontWeight = FontWeight.Bold,
-                                            color = AzulCancha,
-                                            fontSize = 15.sp,
-                                        )
-                                    }
-                                    items(data.cancha) { row ->
-                                        TarjetaCancelacionCancha(row)
-                                    }
-                                }
-                                if (data.salones.isNotEmpty()) {
-                                    item {
-                                        Spacer(Modifier.height(4.dp))
-                                        Text(
-                                            "Salones",
-                                            fontWeight = FontWeight.Bold,
-                                            color = NaranjaPrincipal,
-                                            fontSize = 15.sp,
-                                        )
-                                    }
-                                    items(data.salones) { row ->
-                                        TarjetaCancelacionSalon(row)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                DialogoCancelacionesContenidoPrincipal(
+                    cancelacionesLoading,
+                    cancelaciones,
+                    error,
+                    onVolverACargar,
+                )
             }
         }
     }

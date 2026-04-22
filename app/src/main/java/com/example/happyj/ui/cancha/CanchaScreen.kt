@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -211,6 +212,197 @@ private fun construirFilasListaCancha(
     }
 }
 
+private fun construirCeldasCalendarioMes(mesVisible: YearMonth): List<LocalDate?> {
+    val offsetLunes = (mesVisible.atDay(1).dayOfWeek.value + 6) % 7
+    return buildList {
+        repeat(offsetLunes) { add(null) }
+        for (d in 1..mesVisible.lengthOfMonth()) add(mesVisible.atDay(d))
+        while (size % 7 != 0) add(null)
+    }
+}
+
+private fun coloresLeyendaCeldaCalendarioCancha(
+    dia: LocalDate?,
+    estadoPorDia: Map<LocalDate, EstadoDisponibilidadDiaCancha>,
+    cargando: Boolean,
+): Pair<Color, Color> {
+    if (dia == null) return Color.Transparent to Color.Transparent
+    val st = estadoPorDia[dia]
+    if (cargando && st == null) return Color(0xFFEEEEEE) to Color(0xFF9E9E9E)
+    if (st == null) return Color(0xFFEEEEEE) to Color(0xFF757575)
+    return when (st) {
+        EstadoDisponibilidadDiaCancha.Libre -> Color(0xFFC8E6C9) to Color(0xFF1B5E20)
+        EstadoDisponibilidadDiaCancha.Parcial -> Color(0xFFFFF9C4) to Color(0xFFF57F17)
+        EstadoDisponibilidadDiaCancha.Lleno -> Color(0xFFFFCDD2) to Color(0xFFB71C1C)
+        EstadoDisponibilidadDiaCancha.Pasado -> Color(0xFFECEFF1) to Color(0xFF78909C)
+    }
+}
+
+private val nombresDiaSemanaCalendarioCancha =
+    listOf("Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom")
+
+@Composable
+private fun CalendarioCanchaBarraMes(
+    tituloMes: String,
+    onMesAnterior: () -> Unit,
+    onMesSiguiente: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        IconButton(onClick = onMesAnterior) {
+            Icon(Icons.Outlined.ChevronLeft, contentDescription = "Mes anterior")
+        }
+        Text(
+            tituloMes,
+            fontWeight = FontWeight.Bold,
+            fontSize = 18.sp,
+            color = Color(0xFF1A1A2E),
+        )
+        IconButton(onClick = onMesSiguiente) {
+            Icon(Icons.Outlined.ChevronRight, contentDescription = "Mes siguiente")
+        }
+    }
+}
+
+@Composable
+private fun CalendarioCanchaLeyendaEstados() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 8.dp),
+        horizontalArrangement = Arrangement.SpaceEvenly,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        LeyendaCalendarioCancha(Color(0xFFC8E6C9), "Libre")
+        LeyendaCalendarioCancha(Color(0xFFFFF9C4), "Parcial")
+        LeyendaCalendarioCancha(Color(0xFFFFCDD2), "Lleno")
+        LeyendaCalendarioCancha(Color(0xFFECEFF1), "Pasado")
+    }
+}
+
+@Composable
+private fun CalendarioCanchaFilaDiasSemana() {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceEvenly,
+    ) {
+        nombresDiaSemanaCalendarioCancha.forEach { n ->
+            Text(
+                n,
+                fontSize = 11.sp,
+                color = HappyTextSecondary,
+                modifier = Modifier.weight(1f),
+                textAlign = TextAlign.Center,
+            )
+        }
+    }
+}
+
+@Composable
+private fun RowScope.CeldaDiaCalendarioCancha(
+    dia: LocalDate?,
+    fechaSeleccionada: LocalDate,
+    estadoPorDia: Map<LocalDate, EstadoDisponibilidadDiaCancha>,
+    cargando: Boolean,
+    onElegirFecha: (LocalDate) -> Unit,
+) {
+    val (bg, fg) = coloresLeyendaCeldaCalendarioCancha(dia, estadoPorDia, cargando)
+    val sel = dia != null && dia == fechaSeleccionada
+    Box(
+        modifier = Modifier
+            .weight(1f)
+            .padding(2.dp)
+            .height(40.dp)
+            .clip(RoundedCornerShape(10.dp))
+            .background(bg)
+            .border(
+                width = if (sel) 2.dp else 0.dp,
+                color = if (sel) HappyGreen else Color.Transparent,
+                shape = RoundedCornerShape(10.dp),
+            )
+            .then(
+                if (dia != null) Modifier.clickable { onElegirFecha(dia) }
+                else Modifier,
+            ),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (dia != null) {
+            Text(
+                "${dia.dayOfMonth}",
+                fontWeight = if (sel) FontWeight.Bold else FontWeight.SemiBold,
+                fontSize = 15.sp,
+                color = fg,
+            )
+        }
+    }
+}
+
+@Composable
+private fun CalendarioCanchaGrillaMes(
+    celdas: List<LocalDate?>,
+    fechaSeleccionada: LocalDate,
+    estadoPorDia: Map<LocalDate, EstadoDisponibilidadDiaCancha>,
+    cargando: Boolean,
+    onElegirFecha: (LocalDate) -> Unit,
+) {
+    Column {
+        celdas.chunked(7).forEach { semana ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 3.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+            ) {
+                for (dia in semana) {
+                    CeldaDiaCalendarioCancha(
+                        dia,
+                        fechaSeleccionada,
+                        estadoPorDia,
+                        cargando,
+                        onElegirFecha,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CalendarioCanchaGrillaConCarga(
+    celdas: List<LocalDate?>,
+    fechaSeleccionada: LocalDate,
+    estadoPorDia: Map<LocalDate, EstadoDisponibilidadDiaCancha>,
+    cargando: Boolean,
+    onElegirFecha: (LocalDate) -> Unit,
+) {
+    Box(modifier = Modifier.fillMaxWidth()) {
+        CalendarioCanchaGrillaMes(
+            celdas,
+            fechaSeleccionada,
+            estadoPorDia,
+            cargando,
+            onElegirFecha,
+        )
+        if (cargando) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0x66FFFFFF)),
+                contentAlignment = Alignment.Center,
+            ) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(40.dp),
+                    color = HappyGreen,
+                    strokeWidth = 3.dp,
+                )
+            }
+        }
+    }
+}
+
 @Composable
 private fun CalendarioCanchaDisponibilidadDialog(
     mesVisible: YearMonth,
@@ -223,29 +415,7 @@ private fun CalendarioCanchaDisponibilidadDialog(
     onDismiss: () -> Unit,
 ) {
     val tituloMes = mesVisible.format(mesAnioFmt).replaceFirstChar { it.uppercase() }
-    val offsetLunes = (mesVisible.atDay(1).dayOfWeek.value + 6) % 7
-    val celdas = buildList {
-        repeat(offsetLunes) { add(null) }
-        for (d in 1..mesVisible.lengthOfMonth()) add(mesVisible.atDay(d))
-        while (size % 7 != 0) add(null)
-    }
-    val nombresDiaSemana = listOf("Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom")
-
-    fun colorCelda(d: LocalDate?): Pair<Color, Color> {
-        if (d == null) return Color.Transparent to Color.Transparent
-        val st = estadoPorDia[d]
-        val base = when {
-            cargando && st == null -> Color(0xFFEEEEEE) to Color(0xFF9E9E9E)
-            st == null -> Color(0xFFEEEEEE) to Color(0xFF757575)
-            else -> when (st) {
-                EstadoDisponibilidadDiaCancha.Libre -> Color(0xFFC8E6C9) to Color(0xFF1B5E20)
-                EstadoDisponibilidadDiaCancha.Parcial -> Color(0xFFFFF9C4) to Color(0xFFF57F17)
-                EstadoDisponibilidadDiaCancha.Lleno -> Color(0xFFFFCDD2) to Color(0xFFB71C1C)
-                EstadoDisponibilidadDiaCancha.Pasado -> Color(0xFFECEFF1) to Color(0xFF78909C)
-            }
-        }
-        return base
-    }
+    val celdas = construirCeldasCalendarioMes(mesVisible)
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -260,115 +430,35 @@ private fun CalendarioCanchaDisponibilidadDialog(
             shadowElevation = 8.dp,
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    IconButton(onClick = { onMesChange(mesVisible.minusMonths(1)) }) {
-                        Icon(Icons.Outlined.ChevronLeft, contentDescription = "Mes anterior")
-                    }
-                    Text(
-                        tituloMes,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 18.sp,
-                        color = Color(0xFF1A1A2E),
-                    )
-                    IconButton(onClick = { onMesChange(mesVisible.plusMonths(1)) }) {
-                        Icon(Icons.Outlined.ChevronRight, contentDescription = "Mes siguiente")
-                    }
-                }
+                CalendarioCanchaBarraMes(
+                    tituloMes,
+                    onMesAnterior = { onMesChange(mesVisible.minusMonths(1)) },
+                    onMesSiguiente = { onMesChange(mesVisible.plusMonths(1)) },
+                )
                 Text(
                     "Toca un día para verlo en la grilla de horarios.",
                     fontSize = 12.sp,
                     color = HappyTextSecondary,
                     modifier = Modifier.padding(bottom = 8.dp),
                 )
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    LeyendaCalendarioCancha(Color(0xFFC8E6C9), "Libre")
-                    LeyendaCalendarioCancha(Color(0xFFFFF9C4), "Parcial")
-                    LeyendaCalendarioCancha(Color(0xFFFFCDD2), "Lleno")
-                    LeyendaCalendarioCancha(Color(0xFFECEFF1), "Pasado")
-                }
+                CalendarioCanchaLeyendaEstados()
                 errorCarga?.let { err ->
-                    Text(err, color = MaterialTheme.colorScheme.error, fontSize = 13.sp, modifier = Modifier.padding(bottom = 8.dp))
+                    Text(
+                        err,
+                        color = MaterialTheme.colorScheme.error,
+                        fontSize = 13.sp,
+                        modifier = Modifier.padding(bottom = 8.dp),
+                    )
                 }
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                    nombresDiaSemana.forEach { n ->
-                        Text(
-                            n,
-                            fontSize = 11.sp,
-                            color = HappyTextSecondary,
-                            modifier = Modifier.weight(1f),
-                            textAlign = TextAlign.Center,
-                        )
-                    }
-                }
+                CalendarioCanchaFilaDiasSemana()
                 Spacer(Modifier.height(6.dp))
-                Box(modifier = Modifier.fillMaxWidth()) {
-                    Column {
-                        celdas.chunked(7).forEach { semana ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 3.dp),
-                                horizontalArrangement = Arrangement.SpaceEvenly,
-                            ) {
-                                semana.forEach { dia ->
-                                    val (bg, fg) = colorCelda(dia)
-                                    val sel = dia != null && dia == fechaSeleccionada
-                                    Box(
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .padding(2.dp)
-                                            .height(40.dp)
-                                            .clip(RoundedCornerShape(10.dp))
-                                            .background(bg)
-                                            .border(
-                                                width = if (sel) 2.dp else 0.dp,
-                                                color = if (sel) HappyGreen else Color.Transparent,
-                                                shape = RoundedCornerShape(10.dp),
-                                            )
-                                            .then(
-                                                if (dia != null) Modifier.clickable { onElegirFecha(dia) }
-                                                else Modifier,
-                                            ),
-                                        contentAlignment = Alignment.Center,
-                                    ) {
-                                        if (dia != null) {
-                                            Text(
-                                                "${dia.dayOfMonth}",
-                                                fontWeight = if (sel) FontWeight.Bold else FontWeight.SemiBold,
-                                                fontSize = 15.sp,
-                                                color = fg,
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    if (cargando) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(Color(0x66FFFFFF)),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(40.dp),
-                                color = HappyGreen,
-                                strokeWidth = 3.dp,
-                            )
-                        }
-                    }
-                }
+                CalendarioCanchaGrillaConCarga(
+                    celdas,
+                    fechaSeleccionada,
+                    estadoPorDia,
+                    cargando,
+                    onElegirFecha,
+                )
                 TextButton(
                     onClick = onDismiss,
                     modifier = Modifier.align(Alignment.End),
