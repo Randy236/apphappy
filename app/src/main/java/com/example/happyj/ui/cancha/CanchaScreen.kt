@@ -735,7 +735,6 @@ private fun etiquetaDuracionSlotOcupado(g: GrupoTurnoCancha, rep: ReservaCanchaD
         if (duracionCanchaMinutos(rep.hora) == 30) "½ h" else "1 h"
     }
 
-@Composable
 private fun LazyListScope.CanchaItemsListaFilasHorarios(
     filasGrilla: List<FilaGrillaCancha>,
     fecha: LocalDate,
@@ -821,25 +820,55 @@ private fun DialogoDetalleGrupoLineaSaldoPendiente(saldoPend: Boolean, saldoTota
     )
 }
 
+private data class DialogoDetalleGrupoUiState(
+    val g: GrupoTurnoCancha,
+    val rep: ReservaCanchaDto,
+    val cancelada: Boolean,
+    val variasFranjas: Boolean,
+    val saldoPend: Boolean,
+    val saldoTotal: Double,
+    val idsSaldo: List<Int>,
+)
+
+private fun segmentoCanchaConSaldoPendiente(rep: ReservaCanchaDto): Boolean =
+    rep.adelanto < rep.montoTotal - 1e-6
+
+private fun dialogoDetalleGrupoUiState(grupo: GrupoTurnoCancha): DialogoDetalleGrupoUiState {
+    val rep = grupo.segmentos.first()
+    val cancelada = grupo.segmentos.all { it.estado == "cancelado" }
+    val saldoPend = !cancelada && grupo.segmentos.any(::segmentoCanchaConSaldoPendiente)
+    val saldoTotal = grupo.montoTotalAcumulado - grupo.adelantoAcumulado
+    val variasFranjas = grupo.segmentos.size > 1
+    val idsSaldo = if (saldoPend) {
+        grupo.segmentos.filter(::segmentoCanchaConSaldoPendiente).map { it.id }
+    } else {
+        emptyList()
+    }
+    return DialogoDetalleGrupoUiState(
+        grupo,
+        rep,
+        cancelada,
+        variasFranjas,
+        saldoPend,
+        saldoTotal,
+        idsSaldo,
+    )
+}
+
 @Composable
-private fun DialogoDetalleGrupoTextoColumn(
-    g: GrupoTurnoCancha,
-    rep: ReservaCanchaDto,
-    cancelada: Boolean,
-    variasFranjas: Boolean,
-    saldoPend: Boolean,
-    saldoTotal: Double,
-) {
+private fun DialogoDetalleGrupoTextoColumn(state: DialogoDetalleGrupoUiState) {
+    val g = state.g
+    val rep = state.rep
     Column {
         Text("Cliente: ${rep.nombreCliente}")
         Text("Deporte: ${etiquetaDeporte(rep.deporte)}")
         Text("Hora: ${g.horaInicioTexto} – ${g.horaFinTexto}")
-        DialogoDetalleGrupoLineaFranjasMultiples(g, variasFranjas)
+        DialogoDetalleGrupoLineaFranjasMultiples(g, state.variasFranjas)
         Text("Total: S/ ${"%.2f".format(g.montoTotalAcumulado)}")
         Text("Adelanto: S/ ${"%.2f".format(g.adelantoAcumulado)}")
         Text("Estado: ${rep.estado}")
-        DialogoDetalleGrupoLineaMotivoCancelacion(cancelada, rep)
-        DialogoDetalleGrupoLineaSaldoPendiente(saldoPend, saldoTotal)
+        DialogoDetalleGrupoLineaMotivoCancelacion(state.cancelada, rep)
+        DialogoDetalleGrupoLineaSaldoPendiente(state.saldoPend, state.saldoTotal)
     }
 }
 
@@ -883,29 +912,17 @@ private fun DialogoDetalleGrupoCancha(
     onCerrar: () -> Unit,
     onPedirCancelar: (GrupoTurnoCancha) -> Unit,
 ) {
-    val rep = g.segmentos.first()
-    val cancelada = g.segmentos.all { it.estado == "cancelado" }
-    val saldoPend = !cancelada && g.segmentos.any { it.adelanto < it.montoTotal - 1e-6 }
-    val saldoTotal = g.montoTotalAcumulado - g.adelantoAcumulado
-    val variasFranjas = g.segmentos.size > 1
-    val idsSaldo = remember(g.segmentos, saldoPend) {
-        if (!saldoPend) emptyList()
-        else g.segmentos.filter { it.adelanto < it.montoTotal - 1e-6 }.map { it.id }
-    }
+    val s = dialogoDetalleGrupoUiState(g)
     AlertDialog(
         onDismissRequest = onCerrar,
-        title = { DialogoDetalleGrupoTitulo(cancelada, variasFranjas) },
-        text = {
-            DialogoDetalleGrupoTextoColumn(
-                g, rep, cancelada, variasFranjas, saldoPend, saldoTotal,
-            )
-        },
+        title = { DialogoDetalleGrupoTitulo(s.cancelada, s.variasFranjas) },
+        text = { DialogoDetalleGrupoTextoColumn(s) },
         dismissButton = {
-            DialogoDetalleGrupoBotonCobrar(saldoPend, idsSaldo, viewModel, onCerrar)
+            DialogoDetalleGrupoBotonCobrar(s.saldoPend, s.idsSaldo, viewModel, onCerrar)
         },
         confirmButton = {
             DialogoDetalleGrupoBotonesConfirmar(
-                cancelada,
+                s.cancelada,
                 onPedirCancelar = { onPedirCancelar(g) },
                 onCerrar = onCerrar,
             )
@@ -1242,17 +1259,19 @@ private fun SlotCardInteriorDisponible(
     }
 }
 
+private data class SlotCardInteriorOcupadoProps(
+    val horaInicio: String,
+    val horaFin: String,
+    val etiquetaDuracion: String,
+    val reserva: ReservaCanchaDto,
+    val paleta: SlotCardPaleta,
+    val finalizada: Boolean,
+    val saldoPendiente: Boolean,
+    val unTurnoLargo: Boolean,
+)
+
 @Composable
-private fun SlotCardInteriorOcupado(
-    horaInicio: String,
-    horaFin: String,
-    etiquetaDuracion: String,
-    reserva: ReservaCanchaDto,
-    paleta: SlotCardPaleta,
-    finalizada: Boolean,
-    saldoPendiente: Boolean,
-    unTurnoLargo: Boolean,
-) {
+private fun SlotCardInteriorOcupado(props: SlotCardInteriorOcupadoProps) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -1261,15 +1280,15 @@ private fun SlotCardInteriorOcupado(
         Column(modifier = Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = "$horaInicio – $horaFin",
+                    text = "${props.horaInicio} – ${props.horaFin}",
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp,
                     color = Color(0xFF1A1A2E),
                 )
                 Spacer(Modifier.width(8.dp))
-                SlotCardChipDuracionTramo(etiquetaDuracion)
+                SlotCardChipDuracionTramo(props.etiquetaDuracion)
             }
-            if (unTurnoLargo) {
+            if (props.unTurnoLargo) {
                 Text(
                     "Un solo turno (varias franjas)",
                     fontSize = 11.sp,
@@ -1280,7 +1299,7 @@ private fun SlotCardInteriorOcupado(
             }
             Spacer(Modifier.height(4.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                SlotCardBadgeLineaEstado(paleta)
+                SlotCardBadgeLineaEstado(props.paleta)
             }
         }
     }
@@ -1303,7 +1322,7 @@ private fun SlotCardInteriorOcupado(
             Spacer(Modifier.width(6.dp))
             Column {
                 Text(
-                    text = reserva.nombreCliente,
+                    text = props.reserva.nombreCliente,
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 13.sp,
                     color = Color(0xFF1A1A2E),
@@ -1311,7 +1330,7 @@ private fun SlotCardInteriorOcupado(
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    text = etiquetaDeporte(reserva.deporte),
+                    text = etiquetaDeporte(props.reserva.deporte),
                     fontSize = 12.sp,
                     color = Color(0xFF757575),
                 )
@@ -1324,10 +1343,10 @@ private fun SlotCardInteriorOcupado(
             modifier = Modifier.size(20.dp),
         )
     }
-    if (finalizada) {
+    if (props.finalizada) {
         Spacer(Modifier.height(4.dp))
         Text(
-            text = if (saldoPendiente) "Finalizado · falta cobrar saldo" else "Finalizado",
+            text = if (props.saldoPendiente) "Finalizado · falta cobrar saldo" else "Finalizado",
             fontSize = 11.sp,
             color = Color(0xFF607D8B),
         )
@@ -1384,14 +1403,16 @@ private fun SlotCardCancha(props: SlotCardCanchaProps) {
                     )
                 } else {
                     SlotCardInteriorOcupado(
-                        props.horaInicio,
-                        props.horaFin,
-                        props.etiquetaDuracion,
-                        reserva!!,
-                        paleta,
-                        props.finalizada,
-                        saldoPendiente,
-                        props.unTurnoLargo,
+                        SlotCardInteriorOcupadoProps(
+                            horaInicio = props.horaInicio,
+                            horaFin = props.horaFin,
+                            etiquetaDuracion = props.etiquetaDuracion,
+                            reserva = reserva!!,
+                            paleta = paleta,
+                            finalizada = props.finalizada,
+                            saldoPendiente = saldoPendiente,
+                            unTurnoLargo = props.unTurnoLargo,
+                        ),
                     )
                 }
             }

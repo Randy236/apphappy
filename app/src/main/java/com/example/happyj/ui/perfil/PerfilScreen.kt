@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -63,11 +64,52 @@ import com.example.happyj.ui.theme.HappyBgMiddle
 import com.example.happyj.ui.theme.HappyBgTop
 import com.example.happyj.ui.theme.HappyGreen
 import com.example.happyj.viewmodel.AuthViewModel
+import com.example.happyj.viewmodel.LineaHistorial
 import com.example.happyj.viewmodel.PerfilViewModel
 import kotlinx.coroutines.launch
 import java.time.format.DateTimeFormatter
 
 private val fmtFechaLarga = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+
+private sealed class CambioPinResult {
+    data class Ok(val mensaje: String) : CambioPinResult()
+    data class Err(val mensaje: String) : CambioPinResult()
+}
+
+private suspend fun ejecutarCambioPinEnApi(
+    session: Session,
+    pinActual: String,
+    pinNuevo: String,
+): CambioPinResult {
+    val res = NetworkModule.api.cambiarPin(
+        session.userId,
+        PinUpdateBody(
+            pinActual = if (session.rol == "administrador") null else pinActual,
+            pinNuevo = pinNuevo,
+        ),
+    )
+    if (res.isSuccessful) {
+        return CambioPinResult.Ok("PIN actualizado correctamente")
+    }
+    val raw = runCatching { res.errorBody()?.string() }.getOrNull()
+    return CambioPinResult.Err(
+        ApiExceptionMapper.mensajeDesdeJsonCuerpo(raw)
+            ?: "No se pudo cambiar el PIN. Revisa los datos e inténtalo otra vez.",
+    )
+}
+
+private suspend fun cambioPinDesdeUi(
+    session: Session,
+    pinActual: String,
+    pinNuevo: String,
+): CambioPinResult =
+    try {
+        ejecutarCambioPinEnApi(session, pinActual, pinNuevo)
+    } catch (e: Exception) {
+        CambioPinResult.Err(
+            ApiExceptionMapper.mensajeUsuario(e, "No se pudo cambiar el PIN."),
+        )
+    }
 
 @Composable
 fun PerfilScreen(
@@ -101,72 +143,11 @@ fun PerfilScreen(
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
     ) {
-        Text(
-            "Perfil",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFF1A1A2E),
-        )
+        PerfilTituloPantalla()
         Spacer(Modifier.height(20.dp))
-
-        Card(
-            shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Row(
-                modifier = Modifier.padding(20.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(64.dp)
-                        .background(HappyGreen.copy(alpha = 0.15f), CircleShape),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(inicial, fontSize = 26.sp, fontWeight = FontWeight.Bold, color = HappyGreen)
-                }
-                Spacer(Modifier.size(16.dp))
-                Column {
-                    Text(session.nombre, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color(0xFF1A1A2E))
-                    Text(
-                        if (session.rol == "administrador") "Administrador" else "Trabajador",
-                        fontSize = 14.sp,
-                        color = Color(0xFF757575),
-                    )
-                }
-            }
-        }
-
+        PerfilTarjetaCabeceraUsuario(session, inicial)
         Spacer(Modifier.height(16.dp))
-
-        Card(
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Row(
-                modifier = Modifier.padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(44.dp)
-                        .background(HappyGreen.copy(alpha = 0.12f), RoundedCornerShape(12.dp)),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(Icons.Outlined.Person, null, tint = HappyGreen)
-                }
-                Spacer(Modifier.size(14.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text("Nombre", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color(0xFF1A1A2E))
-                    Text(session.nombre, fontSize = 15.sp, color = Color(0xFF424242))
-                }
-            }
-        }
-
+        PerfilTarjetaCampoNombre(session)
         Spacer(Modifier.height(10.dp))
 
         TarjetaMenu(
@@ -177,84 +158,28 @@ fun PerfilScreen(
             onClick = { expandPin = !expandPin },
         )
         AnimatedVisibility(expandPin) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp),
-            ) {
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    shape = RoundedCornerShape(16.dp),
-                ) {
-                    Column(Modifier.padding(16.dp)) {
-                        OutlinedTextField(
-                            value = pinActual,
-                            onValueChange = { pinActual = it.filter { c -> c.isDigit() } },
-                            label = { Text("PIN actual") },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true,
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        OutlinedTextField(
-                            value = pinNuevo,
-                            onValueChange = { pinNuevo = it.filter { c -> c.isDigit() } },
-                            label = { Text("PIN nuevo") },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true,
-                        )
-                        mensajePin?.let {
-                            Text(it, color = HappyGreen, modifier = Modifier.padding(top = 8.dp), fontSize = 13.sp)
-                        }
-                        errorPin?.let {
-                            BannerMensajeImportante(
-                                titulo = "No se guardó el PIN",
-                                mensaje = it,
-                                modifier = Modifier.padding(top = 10.dp),
-                            )
-                        }
-                        Spacer(Modifier.height(12.dp))
-                        Button(
-                            onClick = {
-                                mensajePin = null
-                                errorPin = null
-                                scope.launch {
-                                    try {
-                                        val res = NetworkModule.api.cambiarPin(
-                                            session.userId,
-                                            PinUpdateBody(
-                                                pinActual = if (session.rol == "administrador") null else pinActual,
-                                                pinNuevo = pinNuevo,
-                                            ),
-                                        )
-                                        if (res.isSuccessful) {
-                                            mensajePin = "PIN actualizado correctamente"
-                                            pinActual = ""
-                                            pinNuevo = ""
-                                        } else {
-                                            val raw = try {
-                                                res.errorBody()?.string()
-                                            } catch (_: Exception) {
-                                                null
-                                            }
-                                            errorPin = ApiExceptionMapper.mensajeDesdeJsonCuerpo(raw)
-                                                ?: "No se pudo cambiar el PIN. Revisa los datos e inténtalo otra vez."
-                                        }
-                                    } catch (e: Exception) {
-                                        errorPin = ApiExceptionMapper.mensajeUsuario(
-                                            e,
-                                            "No se pudo cambiar el PIN.",
-                                        )
-                                    }
-                                }
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.buttonColors(containerColor = HappyGreen),
-                        ) {
-                            Text("Guardar nuevo PIN")
+            PerfilFormularioCambioPin(
+                pinActual = pinActual,
+                pinNuevo = pinNuevo,
+                mensajePin = mensajePin,
+                errorPin = errorPin,
+                onPinActualChange = { pinActual = it.filter { c -> c.isDigit() } },
+                onPinNuevoChange = { pinNuevo = it.filter { c -> c.isDigit() } },
+                onGuardar = {
+                    mensajePin = null
+                    errorPin = null
+                    scope.launch {
+                        when (val r = cambioPinDesdeUi(session, pinActual, pinNuevo)) {
+                            is CambioPinResult.Ok -> {
+                                mensajePin = r.mensaje
+                                pinActual = ""
+                                pinNuevo = ""
+                            }
+                            is CambioPinResult.Err -> errorPin = r.mensaje
                         }
                     }
-                }
-            }
+                },
+            )
         }
 
         Spacer(Modifier.height(10.dp))
@@ -270,86 +195,11 @@ fun PerfilScreen(
             },
         )
         AnimatedVisibility(expandHistorial) {
-            val scrollHist = rememberScrollState()
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-            ) {
-                when {
-                    cargandoHist -> {
-                        Box(
-                            Modifier
-                                .fillMaxWidth()
-                                .height(160.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            CircularProgressIndicator(color = HappyGreen)
-                        }
-                    }
-                    errorHist != null -> {
-                        BannerMensajeImportante(
-                            titulo = "No se pudo cargar el historial",
-                            mensaje = errorHist!!,
-                            modifier = Modifier.padding(12.dp),
-                        )
-                    }
-                    lineas.isEmpty() -> {
-                        Text(
-                            "No hay reservas en el rango consultado.",
-                            color = Color(0xFF9E9E9E),
-                            modifier = Modifier.padding(16.dp),
-                            fontSize = 14.sp,
-                        )
-                    }
-                    else -> {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .heightIn(max = 280.dp)
-                                .verticalScroll(scrollHist)
-                                .padding(PaddingValues(8.dp)),
-                        ) {
-                            lineas.forEach { linea ->
-                                Column(
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 8.dp, vertical = 8.dp),
-                                ) {
-                                    Row(
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        modifier = Modifier.fillMaxWidth(),
-                                    ) {
-                                        Surface(
-                                            shape = RoundedCornerShape(8.dp),
-                                            color = if (linea.etiquetaTipo == "Cancha") Color(0xFFE8F5E9) else Color(0xFFE3F2FD),
-                                        ) {
-                                            Text(
-                                                linea.etiquetaTipo,
-                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                                                fontSize = 11.sp,
-                                                fontWeight = FontWeight.SemiBold,
-                                                color = Color(0xFF424242),
-                                            )
-                                        }
-                                        Text(
-                                            linea.fecha.format(fmtFechaLarga),
-                                            fontSize = 12.sp,
-                                            color = Color(0xFF9E9E9E),
-                                        )
-                                    }
-                                    Spacer(Modifier.height(4.dp))
-                                    Text(linea.titulo, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                    Text(linea.detalle, fontSize = 13.sp, color = Color(0xFF757575))
-                                    HorizontalDivider(Modifier.padding(top = 8.dp), color = Color(0xFFEEEEEE))
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            PerfilTarjetaHistorialReservas(
+                cargandoHist = cargandoHist,
+                errorHist = errorHist,
+                lineas = lineas,
+            )
         }
 
         Spacer(Modifier.height(24.dp))
@@ -366,6 +216,263 @@ fun PerfilScreen(
         }
     }
 }
+
+@Composable
+private fun PerfilTituloPantalla() {
+    Text(
+        "Perfil",
+        style = MaterialTheme.typography.headlineSmall,
+        fontWeight = FontWeight.Bold,
+        color = Color(0xFF1A1A2E),
+    )
+}
+
+@Composable
+private fun PerfilTarjetaCabeceraUsuario(session: Session, inicial: String) {
+    Card(
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(
+            modifier = Modifier.padding(20.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(64.dp)
+                    .background(HappyGreen.copy(alpha = 0.15f), CircleShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(inicial, fontSize = 26.sp, fontWeight = FontWeight.Bold, color = HappyGreen)
+            }
+            Spacer(Modifier.size(16.dp))
+            Column {
+                Text(session.nombre, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color(0xFF1A1A2E))
+                Text(
+                    etiquetaRolPerfil(session.rol),
+                    fontSize = 14.sp,
+                    color = Color(0xFF757575),
+                )
+            }
+        }
+    }
+}
+
+private fun etiquetaRolPerfil(rol: String): String =
+    if (rol == "administrador") "Administrador" else "Trabajador"
+
+@Composable
+private fun PerfilTarjetaCampoNombre(session: Session) {
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .background(HappyGreen.copy(alpha = 0.12f), RoundedCornerShape(12.dp)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(Icons.Outlined.Person, null, tint = HappyGreen)
+            }
+            Spacer(Modifier.size(14.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text("Nombre", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color(0xFF1A1A2E))
+                Text(session.nombre, fontSize = 15.sp, color = Color(0xFF424242))
+            }
+        }
+    }
+}
+
+@Composable
+private fun PerfilFormularioCambioPin(
+    pinActual: String,
+    pinNuevo: String,
+    mensajePin: String?,
+    errorPin: String?,
+    onPinActualChange: (String) -> Unit,
+    onPinNuevoChange: (String) -> Unit,
+    onGuardar: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp),
+    ) {
+        Card(
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            shape = RoundedCornerShape(16.dp),
+        ) {
+            Column(Modifier.padding(16.dp)) {
+                OutlinedTextField(
+                    value = pinActual,
+                    onValueChange = onPinActualChange,
+                    label = { Text("PIN actual") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                )
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = pinNuevo,
+                    onValueChange = onPinNuevoChange,
+                    label = { Text("PIN nuevo") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                )
+                mensajePin?.let {
+                    Text(it, color = HappyGreen, modifier = Modifier.padding(top = 8.dp), fontSize = 13.sp)
+                }
+                errorPin?.let {
+                    BannerMensajeImportante(
+                        titulo = "No se guardó el PIN",
+                        mensaje = it,
+                        modifier = Modifier.padding(top = 10.dp),
+                    )
+                }
+                Spacer(Modifier.height(12.dp))
+                Button(
+                    onClick = onGuardar,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = HappyGreen),
+                ) {
+                    Text("Guardar nuevo PIN")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PerfilTarjetaHistorialReservas(
+    cargandoHist: Boolean,
+    errorHist: String?,
+    lineas: List<LineaHistorial>,
+) {
+    val scrollHist = rememberScrollState()
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+    ) {
+        PerfilCuerpoHistorial(
+            cargandoHist = cargandoHist,
+            errorHist = errorHist,
+            lineas = lineas,
+            scrollHist = scrollHist,
+        )
+    }
+}
+
+@Composable
+private fun PerfilCuerpoHistorial(
+    cargandoHist: Boolean,
+    errorHist: String?,
+    lineas: List<LineaHistorial>,
+    scrollHist: ScrollState,
+) {
+    when {
+        cargandoHist -> PerfilHistorialCargando()
+        errorHist != null -> PerfilHistorialError(errorHist)
+        lineas.isEmpty() -> PerfilHistorialVacio()
+        else -> PerfilHistorialListado(lineas, scrollHist)
+    }
+}
+
+@Composable
+private fun PerfilHistorialCargando() {
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .height(160.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        CircularProgressIndicator(color = HappyGreen)
+    }
+}
+
+@Composable
+private fun PerfilHistorialError(mensaje: String) {
+    BannerMensajeImportante(
+        titulo = "No se pudo cargar el historial",
+        mensaje = mensaje,
+        modifier = Modifier.padding(12.dp),
+    )
+}
+
+@Composable
+private fun PerfilHistorialVacio() {
+    Text(
+        "No hay reservas en el rango consultado.",
+        color = Color(0xFF9E9E9E),
+        modifier = Modifier.padding(16.dp),
+        fontSize = 14.sp,
+    )
+}
+
+@Composable
+private fun PerfilHistorialListado(
+    lineas: List<LineaHistorial>,
+    scrollHist: ScrollState,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(max = 280.dp)
+            .verticalScroll(scrollHist)
+            .padding(PaddingValues(8.dp)),
+    ) {
+        lineas.forEach { linea -> PerfilFilaLineaHistorial(linea) }
+    }
+}
+
+@Composable
+private fun PerfilFilaLineaHistorial(linea: LineaHistorial) {
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 8.dp),
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = colorChipTipoHistorial(linea.etiquetaTipo),
+            ) {
+                Text(
+                    linea.etiquetaTipo,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color(0xFF424242),
+                )
+            }
+            Text(
+                linea.fecha.format(fmtFechaLarga),
+                fontSize = 12.sp,
+                color = Color(0xFF9E9E9E),
+            )
+        }
+        Spacer(Modifier.height(4.dp))
+        Text(linea.titulo, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+        Text(linea.detalle, fontSize = 13.sp, color = Color(0xFF757575))
+        HorizontalDivider(Modifier.padding(top = 8.dp), color = Color(0xFFEEEEEE))
+    }
+}
+
+private fun colorChipTipoHistorial(etiquetaTipo: String): Color =
+    if (etiquetaTipo == "Cancha") Color(0xFFE8F5E9) else Color(0xFFE3F2FD)
 
 @Composable
 private fun TarjetaMenu(
