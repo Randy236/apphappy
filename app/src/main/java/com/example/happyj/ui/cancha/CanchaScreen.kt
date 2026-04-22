@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -658,6 +659,10 @@ private fun ColumnScope.CanchaBloqueCargaErrores(
     }
 }
 
+private fun claveEstableFilaGrillaCancha(fila: FilaGrillaCancha): String =
+    if (fila.libre) "L${fila.horaSlot}"
+    else "G${fila.grupo!!.segmentos.first().id}"
+
 @Composable
 private fun CanchaSlotItemFila(
     f: FilaGrillaCancha,
@@ -666,11 +671,24 @@ private fun CanchaSlotItemFila(
     onCeldaOcupadaClick: (GrupoTurnoCancha) -> Unit,
 ) {
     if (f.libre) {
-        val horaSlot = f.horaSlot
-        val pasado = esSlotPasado(fecha, horaSlot)
-        val etiquetaDuracion =
-            if (duracionCanchaMinutos(horaSlot) == 30) "½ h" else "1 h"
-        SlotCardCancha(
+        CanchaSlotItemFilaLibre(f, fecha, onCeldaLibreClick)
+    } else {
+        CanchaSlotItemFilaOcupada(f, fecha, onCeldaOcupadaClick)
+    }
+}
+
+@Composable
+private fun CanchaSlotItemFilaLibre(
+    f: FilaGrillaCancha,
+    fecha: LocalDate,
+    onCeldaLibreClick: (horaSlot: String, pasado: Boolean) -> Unit,
+) {
+    val horaSlot = f.horaSlot
+    val pasado = esSlotPasado(fecha, horaSlot)
+    val etiquetaDuracion =
+        if (duracionCanchaMinutos(horaSlot) == 30) "½ h" else "1 h"
+    SlotCardCancha(
+        SlotCardCanchaProps(
             horaInicio = horaSlot.take(5),
             horaFin = horaFinCancha(horaSlot),
             reserva = null,
@@ -680,18 +698,23 @@ private fun CanchaSlotItemFila(
             unTurnoLargo = false,
             hayAdelantoEnGrupo = false,
             onClick = { onCeldaLibreClick(horaSlot, pasado) },
-        )
-    } else {
-        val g = f.grupo!!
-        val rep = g.segmentos.first()
-        val finalizada = g.segmentos.all { canchaFinalizada(fecha, it) }
-        val etiquetaDuracion = if (g.segmentos.size > 1) {
-            formatearDuracionTotalCancha(g.duracionTotalMinutos)
-        } else {
-            if (duracionCanchaMinutos(rep.hora) == 30) "½ h" else "1 h"
-        }
-        val hayAdelanto = g.segmentos.any { it.estado == "con_adelanto" }
-        SlotCardCancha(
+        ),
+    )
+}
+
+@Composable
+private fun CanchaSlotItemFilaOcupada(
+    f: FilaGrillaCancha,
+    fecha: LocalDate,
+    onCeldaOcupadaClick: (GrupoTurnoCancha) -> Unit,
+) {
+    val g = f.grupo!!
+    val rep = g.segmentos.first()
+    val finalizada = g.segmentos.all { canchaFinalizada(fecha, it) }
+    val etiquetaDuracion = etiquetaDuracionSlotOcupado(g, rep)
+    val hayAdelanto = g.segmentos.any { it.estado == "con_adelanto" }
+    SlotCardCancha(
+        SlotCardCanchaProps(
             horaInicio = g.horaInicioTexto,
             horaFin = g.horaFinTexto,
             reserva = rep,
@@ -701,8 +724,31 @@ private fun CanchaSlotItemFila(
             unTurnoLargo = g.segmentos.size > 1,
             hayAdelantoEnGrupo = hayAdelanto,
             onClick = { onCeldaOcupadaClick(g) },
-        )
+        ),
+    )
+}
+
+private fun etiquetaDuracionSlotOcupado(g: GrupoTurnoCancha, rep: ReservaCanchaDto): String =
+    if (g.segmentos.size > 1) {
+        formatearDuracionTotalCancha(g.duracionTotalMinutos)
+    } else {
+        if (duracionCanchaMinutos(rep.hora) == 30) "½ h" else "1 h"
     }
+
+@Composable
+private fun LazyListScope.CanchaItemsListaFilasHorarios(
+    filasGrilla: List<FilaGrillaCancha>,
+    fecha: LocalDate,
+    onCeldaLibreClick: (horaSlot: String, pasado: Boolean) -> Unit,
+    onCeldaOcupadaClick: (GrupoTurnoCancha) -> Unit,
+) {
+    items(
+        filasGrilla,
+        key = { claveEstableFilaGrillaCancha(it) },
+    ) { fila ->
+        CanchaSlotItemFila(fila, fecha, onCeldaLibreClick, onCeldaOcupadaClick)
+    }
+    item { Spacer(Modifier.height(24.dp)) }
 }
 
 @Composable
@@ -721,16 +767,12 @@ private fun ColumnScope.CanchaLazyListaFilasHorarios(
             .padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        items(
+        CanchaItemsListaFilasHorarios(
             filasGrilla,
-            key = { fila ->
-                if (fila.libre) "L${fila.horaSlot}"
-                else "G${fila.grupo!!.segmentos.first().id}"
-            },
-        ) { fila ->
-            CanchaSlotItemFila(fila, fecha, onCeldaLibreClick, onCeldaOcupadaClick)
-        }
-        item { Spacer(Modifier.height(24.dp)) }
+            fecha,
+            onCeldaLibreClick,
+            onCeldaOcupadaClick,
+        )
     }
 }
 
@@ -1292,28 +1334,31 @@ private fun SlotCardInteriorOcupado(
     }
 }
 
+private data class SlotCardCanchaProps(
+    val horaInicio: String,
+    val horaFin: String,
+    val reserva: ReservaCanchaDto?,
+    val finalizada: Boolean,
+    val etiquetaDuracion: String,
+    val slotPasado: Boolean,
+    val unTurnoLargo: Boolean,
+    val hayAdelantoEnGrupo: Boolean,
+    val onClick: () -> Unit,
+)
+
 @Composable
-private fun SlotCardCancha(
-    horaInicio: String,
-    horaFin: String,
-    reserva: ReservaCanchaDto?,
-    finalizada: Boolean = false,
-    etiquetaDuracion: String,
-    slotPasado: Boolean = false,
-    unTurnoLargo: Boolean = false,
-    hayAdelantoEnGrupo: Boolean = false,
-    onClick: () -> Unit,
-) {
+private fun SlotCardCancha(props: SlotCardCanchaProps) {
+    val reserva = props.reserva
     val disponible = reserva == null
-    val conAdelanto = hayAdelantoEnGrupo || reserva?.estado == "con_adelanto"
+    val conAdelanto = props.hayAdelantoEnGrupo || reserva?.estado == "con_adelanto"
     val saldoPendiente = reserva != null && reserva.adelanto < reserva.montoTotal
-    val paleta = slotCardPaleta(disponible, finalizada, conAdelanto, saldoPendiente)
+    val paleta = slotCardPaleta(disponible, props.finalizada, conAdelanto, saldoPendiente)
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .then(if (slotPasado) Modifier.alpha(0.52f) else Modifier)
-            .clickable(onClick = onClick),
+            .then(if (props.slotPasado) Modifier.alpha(0.52f) else Modifier)
+            .clickable(onClick = props.onClick),
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
@@ -1331,22 +1376,22 @@ private fun SlotCardCancha(
             ) {
                 if (disponible) {
                     SlotCardInteriorDisponible(
-                        horaInicio,
-                        horaFin,
-                        etiquetaDuracion,
+                        props.horaInicio,
+                        props.horaFin,
+                        props.etiquetaDuracion,
                         paleta,
-                        slotPasado,
+                        props.slotPasado,
                     )
                 } else {
                     SlotCardInteriorOcupado(
-                        horaInicio,
-                        horaFin,
-                        etiquetaDuracion,
+                        props.horaInicio,
+                        props.horaFin,
+                        props.etiquetaDuracion,
                         reserva!!,
                         paleta,
-                        finalizada,
+                        props.finalizada,
                         saldoPendiente,
-                        unTurnoLargo,
+                        props.unTurnoLargo,
                     )
                 }
             }
