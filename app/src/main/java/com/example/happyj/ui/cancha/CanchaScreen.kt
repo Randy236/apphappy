@@ -659,9 +659,11 @@ private fun ColumnScope.CanchaBloqueCargaErrores(
     }
 }
 
-private fun claveEstableFilaGrillaCancha(fila: FilaGrillaCancha): String =
-    if (fila.libre) "L${fila.horaSlot}"
-    else "G${fila.grupo!!.segmentos.first().id}"
+private fun claveEstableFilaGrillaCancha(fila: FilaGrillaCancha): String {
+    if (fila.libre) return "L${fila.horaSlot}"
+    val idGrupo = fila.grupo?.segmentos?.firstOrNull()?.id
+    return if (idGrupo != null) "G$idGrupo" else "G${fila.horaSlot}"
+}
 
 @Composable
 private fun CanchaSlotItemFila(
@@ -708,7 +710,7 @@ private fun CanchaSlotItemFilaOcupada(
     fecha: LocalDate,
     onCeldaOcupadaClick: (GrupoTurnoCancha) -> Unit,
 ) {
-    val g = f.grupo!!
+    val g = f.grupo ?: return
     val rep = g.segmentos.first()
     val finalizada = g.segmentos.all { canchaFinalizada(fecha, it) }
     val etiquetaDuracion = etiquetaDuracionSlotOcupado(g, rep)
@@ -1140,31 +1142,50 @@ private data class SlotCardPaleta(
     val badgeTexto: String,
 )
 
+private fun slotCardPaletaAccent(
+    disponible: Boolean,
+    finalizada: Boolean,
+    conAdelanto: Boolean,
+): Color = when {
+    finalizada -> Color(0xFF78909C)
+    disponible -> DisponibleGreen
+    conAdelanto -> AdelantoAmarillo
+    else -> OcupadoRojo
+}
+
+private fun slotCardPaletaBadgeBg(
+    disponible: Boolean,
+    finalizada: Boolean,
+    conAdelanto: Boolean,
+): Color = when {
+    finalizada -> Color(0xFFECEFF1)
+    disponible -> Color(0xFFE8F5E9)
+    conAdelanto -> Color(0xFFFFF8E1)
+    else -> Color(0xFFFFEBEE)
+}
+
+private fun slotCardPaletaBadgeTexto(
+    disponible: Boolean,
+    finalizada: Boolean,
+    conAdelanto: Boolean,
+    saldoPendiente: Boolean,
+): String = when {
+    finalizada && saldoPendiente -> "Finalizado (saldo pendiente)"
+    finalizada -> "Finalizado"
+    disponible -> "Disponible"
+    conAdelanto -> "Adelanto"
+    else -> "Ocupado"
+}
+
 private fun slotCardPaleta(
     disponible: Boolean,
     finalizada: Boolean,
     conAdelanto: Boolean,
     saldoPendiente: Boolean,
 ): SlotCardPaleta {
-    val accent = when {
-        finalizada -> Color(0xFF78909C)
-        disponible -> DisponibleGreen
-        conAdelanto -> AdelantoAmarillo
-        else -> OcupadoRojo
-    }
-    val badgeBg = when {
-        finalizada -> Color(0xFFECEFF1)
-        disponible -> Color(0xFFE8F5E9)
-        conAdelanto -> Color(0xFFFFF8E1)
-        else -> Color(0xFFFFEBEE)
-    }
-    val badgeTexto = when {
-        finalizada && saldoPendiente -> "Finalizado (saldo pendiente)"
-        finalizada -> "Finalizado"
-        disponible -> "Disponible"
-        conAdelanto -> "Adelanto"
-        else -> "Ocupado"
-    }
+    val accent = slotCardPaletaAccent(disponible, finalizada, conAdelanto)
+    val badgeBg = slotCardPaletaBadgeBg(disponible, finalizada, conAdelanto)
+    val badgeTexto = slotCardPaletaBadgeTexto(disponible, finalizada, conAdelanto, saldoPendiente)
     return SlotCardPaleta(accent, badgeBg, badgeTexto)
 }
 
@@ -1407,7 +1428,7 @@ private fun SlotCardCancha(props: SlotCardCanchaProps) {
                             horaInicio = props.horaInicio,
                             horaFin = props.horaFin,
                             etiquetaDuracion = props.etiquetaDuracion,
-                            reserva = reserva!!,
+                            reserva = reserva,
                             paleta = paleta,
                             finalizada = props.finalizada,
                             saldoPendiente = saldoPendiente,
@@ -1461,31 +1482,35 @@ private fun adelantoEnviarValidadoForm(
         }
     }
 
+private data class FormReservaCanchaSnapshot(
+    val guardando: Boolean,
+    val nombre: String,
+    val monto: String,
+    val modoPago: ModoPagoCancha,
+    val adelantoIngresado: String,
+    val fechaParsed: LocalDate?,
+    val fechaIso: String,
+    val deporte: String,
+    val horaIniText: String,
+    val horaFinText: String,
+)
+
 private fun intentarConstruirReservasCanchaForm(
-    guardando: Boolean,
-    nombre: String,
-    monto: String,
-    modoPago: ModoPagoCancha,
-    adelantoIngresado: String,
-    fechaParsed: LocalDate?,
-    fechaIso: String,
-    deporte: String,
-    horaIniText: String,
-    horaFinText: String,
+    s: FormReservaCanchaSnapshot,
 ): FormReservaCanchaGuardarResult? {
-    if (guardando) return null
-    val mt = parseSolesCanchaForm(monto)
-    if (nombre.isBlank() || mt <= 0) return null
-    val adEnviarTotal = adelantoEnviarValidadoForm(modoPago, mt, adelantoIngresado) ?: return null
-    val fechaSel = fechaParsed ?: return null
-    mensajeRangoCanchaInvalido(horaIniText, horaFinText, fechaSel)?.let {
+    if (s.guardando) return null
+    val mt = parseSolesCanchaForm(s.monto)
+    if (s.nombre.isBlank() || mt <= 0) return null
+    val adEnviarTotal = adelantoEnviarValidadoForm(s.modoPago, mt, s.adelantoIngresado) ?: return null
+    val fechaSel = s.fechaParsed ?: return null
+    mensajeRangoCanchaInvalido(s.horaIniText, s.horaFinText, fechaSel)?.let {
         return FormReservaCanchaGuardarResult.ErrorHorario(it)
     }
-    val franjas = franjasCanchaEntreDetalle(horaIniText, horaFinText, fechaSel)
+    val franjas = franjasCanchaEntreDetalle(s.horaIniText, s.horaFinText, fechaSel)
     if (franjas.isEmpty()) {
         return FormReservaCanchaGuardarResult.ErrorHorario("Revisa las horas: no se pudo armar el turno.")
     }
-    if (inicioTurnoCanchaEsPasado(fechaSel, horaIniText)) {
+    if (inicioTurnoCanchaEsPasado(fechaSel, s.horaIniText)) {
         return FormReservaCanchaGuardarResult.ErrorHorario(
             "La hora de inicio ya pasó. Pon una hora desde este minuto en adelante.",
         )
@@ -1495,9 +1520,9 @@ private fun intentarConstruirReservasCanchaForm(
     val adelantos = repartirMontoSoles(adEnviarTotal, n)
     val lista = franjas.mapIndexed { i, f ->
         ReservaCanchaCreate(
-            nombreCliente = nombre.trim(),
-            deporte = deporte,
-            fecha = fechaIso,
+            nombreCliente = s.nombre.trim(),
+            deporte = s.deporte,
+            fecha = s.fechaIso,
             hora = f.horaInicioSql,
             montoTotal = montos[i],
             adelanto = adelantos[i],
@@ -1505,6 +1530,28 @@ private fun intentarConstruirReservasCanchaForm(
         )
     }
     return FormReservaCanchaGuardarResult.Exito(lista)
+}
+
+private fun aplicarResultadoGuardadoFormCancha(
+    r: FormReservaCanchaGuardarResult?,
+    onErrorHorario: (String) -> Unit,
+    onExito: (List<ReservaCanchaCreate>) -> Unit,
+) {
+    when (r) {
+        is FormReservaCanchaGuardarResult.ErrorHorario -> onErrorHorario(r.mensaje)
+        is FormReservaCanchaGuardarResult.Exito -> onExito(r.lista)
+        null -> Unit
+    }
+}
+
+private fun horasInicialesFormReserva(
+    horaSlotPrellenado: String?,
+    sugerencia: Pair<String, String>,
+): Pair<String, String> {
+    if (horaSlotPrellenado != null) {
+        return horaSlotPrellenado.take(5) to horaFinCancha(horaSlotPrellenado).take(5)
+    }
+    return sugerencia.first to sugerencia.second
 }
 
 @Composable
@@ -1754,6 +1801,55 @@ private fun FormReservaCanchaBotonGuardar(
     }
 }
 
+private data class FormReservaCanchaFormularioProps(
+    val fecha: String,
+    val horaIniText: String,
+    val horaFinText: String,
+    val errorHorario: String?,
+    val nombre: String,
+    val deporte: String,
+    val monto: String,
+    val modoPago: ModoPagoCancha,
+    val adelantoIngresado: String,
+    val montosUi: MontosReservaFormularioUi,
+    val onHoraIniChange: (String) -> Unit,
+    val onHoraFinChange: (String) -> Unit,
+    val onNombreChange: (String) -> Unit,
+    val onElegirFutbol: () -> Unit,
+    val onElegirVoley: () -> Unit,
+    val onMontoChange: (String) -> Unit,
+    val onModoCancelado: () -> Unit,
+    val onModoAdelanto: () -> Unit,
+    val onAdelantoChange: (String) -> Unit,
+)
+
+@Composable
+private fun FormReservaCanchaFormularioScroll(props: FormReservaCanchaFormularioProps) {
+    FormReservaCanchaSeccionFecha(props.fecha)
+    FormReservaCanchaSeccionHorario(
+        horaIniText = props.horaIniText,
+        horaFinText = props.horaFinText,
+        errorHorario = props.errorHorario,
+        onHoraIniChange = props.onHoraIniChange,
+        onHoraFinChange = props.onHoraFinChange,
+    )
+    FormReservaCanchaSeccionNombre(props.nombre, props.onNombreChange)
+    FormReservaCanchaSeccionDeporte(
+        deporte = props.deporte,
+        onElegirFutbol = props.onElegirFutbol,
+        onElegirVoley = props.onElegirVoley,
+    )
+    FormReservaCanchaSeccionMonto(props.monto, props.onMontoChange)
+    FormReservaCanchaSeccionFormaPago(
+        modoPago = props.modoPago,
+        adelantoIngresado = props.adelantoIngresado,
+        montosUi = props.montosUi,
+        onModoCancelado = props.onModoCancelado,
+        onModoAdelanto = props.onModoAdelanto,
+        onAdelantoChange = props.onAdelantoChange,
+    )
+}
+
 @Composable
 private fun FormReservaCanchaDialog(
     fecha: String,
@@ -1771,15 +1867,11 @@ private fun FormReservaCanchaDialog(
     var monto by remember { mutableStateOf("30") }
     var modoPago by remember { mutableStateOf(ModoPagoCancha.Cancelado) }
     var adelantoIngresado by remember { mutableStateOf("") }
-    var horaIniText by remember(horaSlotPrellenado, fecha) {
-        mutableStateOf(
-            if (horaSlotPrellenado != null) horaSlotPrellenado.take(5) else sugerencia.first,
-        )
+    var horaIniText by remember(horaSlotPrellenado, sugerencia) {
+        mutableStateOf(horasInicialesFormReserva(horaSlotPrellenado, sugerencia).first)
     }
-    var horaFinText by remember(horaSlotPrellenado, fecha) {
-        mutableStateOf(
-            if (horaSlotPrellenado != null) horaFinCancha(horaSlotPrellenado).take(5) else sugerencia.second,
-        )
+    var horaFinText by remember(horaSlotPrellenado, sugerencia) {
+        mutableStateOf(horasInicialesFormReserva(horaSlotPrellenado, sugerencia).second)
     }
     var errorHorario by remember { mutableStateOf<String?>(null) }
     val scroll = rememberScrollState()
@@ -1791,56 +1883,55 @@ private fun FormReservaCanchaDialog(
         title = "Registrar Reserva",
         scrollState = scroll,
         content = {
-            FormReservaCanchaSeccionFecha(fecha)
-            FormReservaCanchaSeccionHorario(
-                horaIniText = horaIniText,
-                horaFinText = horaFinText,
-                errorHorario = errorHorario,
-                onHoraIniChange = { v ->
-                    errorHorario = null
-                    horaIniText = v.filter { c -> c.isDigit() || c == ':' }.take(5)
-                },
-                onHoraFinChange = { v ->
-                    errorHorario = null
-                    horaFinText = v.filter { c -> c.isDigit() || c == ':' }.take(5)
-                },
-            )
-            FormReservaCanchaSeccionNombre(nombre) { nombre = it }
-            FormReservaCanchaSeccionDeporte(
-                deporte = deporte,
-                onElegirFutbol = { deporte = "Futbol" },
-                onElegirVoley = { deporte = "Voley" },
-            )
-            FormReservaCanchaSeccionMonto(monto) { monto = it.filter { c -> c.isDigit() || c == '.' || c == ',' } }
-            FormReservaCanchaSeccionFormaPago(
-                modoPago = modoPago,
-                adelantoIngresado = adelantoIngresado,
-                montosUi = montosUi,
-                onModoCancelado = { modoPago = ModoPagoCancha.Cancelado },
-                onModoAdelanto = { modoPago = ModoPagoCancha.Adelanto },
-                onAdelantoChange = { adelantoIngresado = it.filter { c -> c.isDigit() || c == '.' || c == ',' } },
+            FormReservaCanchaFormularioScroll(
+                FormReservaCanchaFormularioProps(
+                    fecha = fecha,
+                    horaIniText = horaIniText,
+                    horaFinText = horaFinText,
+                    errorHorario = errorHorario,
+                    nombre = nombre,
+                    deporte = deporte,
+                    monto = monto,
+                    modoPago = modoPago,
+                    adelantoIngresado = adelantoIngresado,
+                    montosUi = montosUi,
+                    onHoraIniChange = { v ->
+                        errorHorario = null
+                        horaIniText = v.filter { c -> c.isDigit() || c == ':' }.take(5)
+                    },
+                    onHoraFinChange = { v ->
+                        errorHorario = null
+                        horaFinText = v.filter { c -> c.isDigit() || c == ':' }.take(5)
+                    },
+                    onNombreChange = { nombre = it },
+                    onElegirFutbol = { deporte = "Futbol" },
+                    onElegirVoley = { deporte = "Voley" },
+                    onMontoChange = { monto = it.filter { c -> c.isDigit() || c == '.' || c == ',' } },
+                    onModoCancelado = { modoPago = ModoPagoCancha.Cancelado },
+                    onModoAdelanto = { modoPago = ModoPagoCancha.Adelanto },
+                    onAdelantoChange = { adelantoIngresado = it.filter { c -> c.isDigit() || c == '.' || c == ',' } },
+                ),
             )
         },
         bottomBar = {
             FormReservaCanchaBotonGuardar(guardando = guardando) {
-                when (
-                    val r = intentarConstruirReservasCanchaForm(
-                        guardando = guardando,
-                        nombre = nombre,
-                        monto = monto,
-                        modoPago = modoPago,
-                        adelantoIngresado = adelantoIngresado,
-                        fechaParsed = fechaParsed,
-                        fechaIso = fecha,
-                        deporte = deporte,
-                        horaIniText = horaIniText,
-                        horaFinText = horaFinText,
-                    )
-                ) {
-                    is FormReservaCanchaGuardarResult.ErrorHorario -> errorHorario = r.mensaje
-                    is FormReservaCanchaGuardarResult.Exito -> onConfirm(r.lista)
-                    null -> Unit
-                }
+                val snap = FormReservaCanchaSnapshot(
+                    guardando = guardando,
+                    nombre = nombre,
+                    monto = monto,
+                    modoPago = modoPago,
+                    adelantoIngresado = adelantoIngresado,
+                    fechaParsed = fechaParsed,
+                    fechaIso = fecha,
+                    deporte = deporte,
+                    horaIniText = horaIniText,
+                    horaFinText = horaFinText,
+                )
+                aplicarResultadoGuardadoFormCancha(
+                    intentarConstruirReservasCanchaForm(snap),
+                    onErrorHorario = { errorHorario = it },
+                    onExito = onConfirm,
+                )
             }
         },
     )
