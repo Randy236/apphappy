@@ -734,14 +734,48 @@ private fun ColumnScope.CanchaLazyListaFilasHorarios(
     }
 }
 
+private fun textoTituloDialogoDetalleGrupo(cancelada: Boolean, variasFranjas: Boolean): String =
+    when {
+        cancelada -> "Reserva cancelada"
+        variasFranjas -> "Reserva (un solo turno)"
+        else -> "Reserva"
+    }
+
 @Composable
 private fun DialogoDetalleGrupoTitulo(cancelada: Boolean, variasFranjas: Boolean) {
+    Text(textoTituloDialogoDetalleGrupo(cancelada, variasFranjas))
+}
+
+@Composable
+private fun DialogoDetalleGrupoLineaFranjasMultiples(g: GrupoTurnoCancha, variasFranjas: Boolean) {
+    if (!variasFranjas) return
     Text(
-        when {
-            cancelada -> "Reserva cancelada"
-            variasFranjas -> "Reserva (un solo turno)"
-            else -> "Reserva"
-        },
+        "${g.segmentos.size} franjas contiguas · un solo turno de juego",
+        fontSize = 12.sp,
+        color = HappyTextSecondary,
+        modifier = Modifier.padding(top = 4.dp),
+    )
+}
+
+@Composable
+private fun DialogoDetalleGrupoLineaMotivoCancelacion(cancelada: Boolean, rep: ReservaCanchaDto) {
+    if (!cancelada) return
+    Spacer(Modifier.height(8.dp))
+    Text(
+        "Motivo (cliente): ${rep.motivoCancelacion ?: "—"}",
+        color = Color(0xFF795548),
+        fontSize = 13.sp,
+    )
+}
+
+@Composable
+private fun DialogoDetalleGrupoLineaSaldoPendiente(saldoPend: Boolean, saldoTotal: Double) {
+    if (!saldoPend) return
+    Spacer(Modifier.height(8.dp))
+    Text(
+        "Saldo pendiente: S/ ${"%.2f".format(saldoTotal)}",
+        color = Color(0xFF795548),
+        fontWeight = FontWeight.SemiBold,
     )
 }
 
@@ -758,33 +792,12 @@ private fun DialogoDetalleGrupoTextoColumn(
         Text("Cliente: ${rep.nombreCliente}")
         Text("Deporte: ${etiquetaDeporte(rep.deporte)}")
         Text("Hora: ${g.horaInicioTexto} – ${g.horaFinTexto}")
-        if (variasFranjas) {
-            Text(
-                "${g.segmentos.size} franjas contiguas · un solo turno de juego",
-                fontSize = 12.sp,
-                color = HappyTextSecondary,
-                modifier = Modifier.padding(top = 4.dp),
-            )
-        }
+        DialogoDetalleGrupoLineaFranjasMultiples(g, variasFranjas)
         Text("Total: S/ ${"%.2f".format(g.montoTotalAcumulado)}")
         Text("Adelanto: S/ ${"%.2f".format(g.adelantoAcumulado)}")
         Text("Estado: ${rep.estado}")
-        if (cancelada) {
-            Spacer(Modifier.height(8.dp))
-            Text(
-                "Motivo (cliente): ${rep.motivoCancelacion ?: "—"}",
-                color = Color(0xFF795548),
-                fontSize = 13.sp,
-            )
-        }
-        if (saldoPend) {
-            Spacer(Modifier.height(8.dp))
-            Text(
-                "Saldo pendiente: S/ ${"%.2f".format(saldoTotal)}",
-                color = Color(0xFF795548),
-                fontWeight = FontWeight.SemiBold,
-            )
-        }
+        DialogoDetalleGrupoLineaMotivoCancelacion(cancelada, rep)
+        DialogoDetalleGrupoLineaSaldoPendiente(saldoPend, saldoTotal)
     }
 }
 
