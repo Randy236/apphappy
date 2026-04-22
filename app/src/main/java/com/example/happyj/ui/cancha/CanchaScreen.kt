@@ -1420,6 +1420,340 @@ private fun SlotCardCancha(props: SlotCardCanchaProps) {
     }
 }
 
+private fun parseSolesCanchaForm(texto: String): Double =
+    texto.replace(",", ".").toDoubleOrNull() ?: 0.0
+
+private data class MontosReservaFormularioUi(
+    val total: Double,
+    val adelantoEfectivo: Double,
+    val saldoPendiente: Double,
+)
+
+private fun montosReservaFormularioUi(
+    modoPago: ModoPagoCancha,
+    monto: String,
+    adelantoIngresado: String,
+): MontosReservaFormularioUi {
+    val totalNum = parseSolesCanchaForm(monto)
+    val adelNum = when (modoPago) {
+        ModoPagoCancha.Cancelado -> totalNum
+        ModoPagoCancha.Adelanto -> parseSolesCanchaForm(adelantoIngresado)
+    }
+    val saldoPendiente = (totalNum - adelNum).coerceAtLeast(0.0)
+    return MontosReservaFormularioUi(totalNum, adelNum, saldoPendiente)
+}
+
+private sealed class FormReservaCanchaGuardarResult {
+    data class ErrorHorario(val mensaje: String) : FormReservaCanchaGuardarResult()
+    data class Exito(val lista: List<ReservaCanchaCreate>) : FormReservaCanchaGuardarResult()
+}
+
+private fun adelantoEnviarValidadoForm(
+    modoPago: ModoPagoCancha,
+    montoTotal: Double,
+    adelantoIngresado: String,
+): Double? =
+    when (modoPago) {
+        ModoPagoCancha.Cancelado -> montoTotal
+        ModoPagoCancha.Adelanto -> {
+            val a = parseSolesCanchaForm(adelantoIngresado)
+            if (a <= 0 || a > montoTotal) null else a
+        }
+    }
+
+private fun intentarConstruirReservasCanchaForm(
+    guardando: Boolean,
+    nombre: String,
+    monto: String,
+    modoPago: ModoPagoCancha,
+    adelantoIngresado: String,
+    fechaParsed: LocalDate?,
+    fechaIso: String,
+    deporte: String,
+    horaIniText: String,
+    horaFinText: String,
+): FormReservaCanchaGuardarResult? {
+    if (guardando) return null
+    val mt = parseSolesCanchaForm(monto)
+    if (nombre.isBlank() || mt <= 0) return null
+    val adEnviarTotal = adelantoEnviarValidadoForm(modoPago, mt, adelantoIngresado) ?: return null
+    val fechaSel = fechaParsed ?: return null
+    mensajeRangoCanchaInvalido(horaIniText, horaFinText, fechaSel)?.let {
+        return FormReservaCanchaGuardarResult.ErrorHorario(it)
+    }
+    val franjas = franjasCanchaEntreDetalle(horaIniText, horaFinText, fechaSel)
+    if (franjas.isEmpty()) {
+        return FormReservaCanchaGuardarResult.ErrorHorario("Revisa las horas: no se pudo armar el turno.")
+    }
+    if (inicioTurnoCanchaEsPasado(fechaSel, horaIniText)) {
+        return FormReservaCanchaGuardarResult.ErrorHorario(
+            "La hora de inicio ya pasó. Pon una hora desde este minuto en adelante.",
+        )
+    }
+    val n = franjas.size
+    val montos = repartirMontoSoles(mt, n)
+    val adelantos = repartirMontoSoles(adEnviarTotal, n)
+    val lista = franjas.mapIndexed { i, f ->
+        ReservaCanchaCreate(
+            nombreCliente = nombre.trim(),
+            deporte = deporte,
+            fecha = fechaIso,
+            hora = f.horaInicioSql,
+            montoTotal = montos[i],
+            adelanto = adelantos[i],
+            duracionMinutos = f.duracionMinutos,
+        )
+    }
+    return FormReservaCanchaGuardarResult.Exito(lista)
+}
+
+@Composable
+private fun FormReservaCanchaSeccionFecha(fecha: String) {
+    Text(
+        "Fecha",
+        fontSize = 13.sp,
+        color = Color(0xFF757575),
+        fontWeight = FontWeight.Medium,
+    )
+    Spacer(Modifier.height(8.dp))
+    InfoCaja(
+        modifier = Modifier.fillMaxWidth(),
+        icon = { Icon(Icons.Outlined.CalendarMonth, null, tint = HappyGreen, modifier = Modifier.size(20.dp)) },
+        texto = fechaCortaEs(fecha),
+    )
+    Spacer(Modifier.height(16.dp))
+}
+
+@Composable
+private fun FormReservaCanchaSeccionHorario(
+    horaIniText: String,
+    horaFinText: String,
+    errorHorario: String?,
+    onHoraIniChange: (String) -> Unit,
+    onHoraFinChange: (String) -> Unit,
+) {
+    Text(
+        "Horario de juego",
+        fontSize = 13.sp,
+        color = Color(0xFF757575),
+        fontWeight = FontWeight.Medium,
+    )
+    Text(
+        "Formato 24 h (1:30 pm = 13:30). Ej. 11:00 a 13:30: dos horas y media; el monto se reparte en cada tramo.",
+        fontSize = 12.sp,
+        color = Color(0xFF9E9E9E),
+        lineHeight = 16.sp,
+    )
+    Spacer(Modifier.height(8.dp))
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        OutlinedTextField(
+            value = horaIniText,
+            onValueChange = onHoraIniChange,
+            modifier = Modifier.weight(1f),
+            label = { Text("Inicio (HH:mm)") },
+            singleLine = true,
+            placeholder = { Text("09:00") },
+            shape = RoundedCornerShape(12.dp),
+            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = HappyGreen),
+        )
+        OutlinedTextField(
+            value = horaFinText,
+            onValueChange = onHoraFinChange,
+            modifier = Modifier.weight(1f),
+            label = { Text("Fin (HH:mm)") },
+            singleLine = true,
+            placeholder = { Text("12:00") },
+            shape = RoundedCornerShape(12.dp),
+            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = HappyGreen),
+        )
+    }
+    errorHorario?.let { err ->
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text = err,
+            color = MaterialTheme.colorScheme.error,
+            fontSize = 13.sp,
+            lineHeight = 18.sp,
+        )
+    }
+    Spacer(Modifier.height(20.dp))
+}
+
+@Composable
+private fun FormReservaCanchaSeccionNombre(
+    nombre: String,
+    onNombreChange: (String) -> Unit,
+) {
+    Text("Nombre del Cliente", fontSize = 13.sp, color = Color(0xFF757575), fontWeight = FontWeight.Medium)
+    Spacer(Modifier.height(6.dp))
+    OutlinedTextField(
+        value = nombre,
+        onValueChange = onNombreChange,
+        modifier = Modifier.fillMaxWidth(),
+        singleLine = true,
+        placeholder = { Text("Ej. Carlos Mendoza") },
+        shape = RoundedCornerShape(12.dp),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = HappyGreen,
+            unfocusedBorderColor = Color(0xFFE0E0E0),
+        ),
+    )
+    Spacer(Modifier.height(16.dp))
+}
+
+@Composable
+private fun FormReservaCanchaSeccionDeporte(
+    deporte: String,
+    onElegirFutbol: () -> Unit,
+    onElegirVoley: () -> Unit,
+) {
+    Text("Deporte", fontSize = 13.sp, color = Color(0xFF757575), fontWeight = FontWeight.Medium)
+    Spacer(Modifier.height(8.dp))
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        HappyToggleOption(
+            text = "Fútbol",
+            selected = deporte == "Futbol",
+            modifier = Modifier.weight(1f),
+            onClick = onElegirFutbol,
+        )
+        HappyToggleOption(
+            text = "Vóley",
+            selected = deporte == "Voley",
+            modifier = Modifier.weight(1f),
+            onClick = onElegirVoley,
+        )
+    }
+    Spacer(Modifier.height(16.dp))
+}
+
+@Composable
+private fun FormReservaCanchaSeccionMonto(
+    monto: String,
+    onMontoChange: (String) -> Unit,
+) {
+    Text("Monto total (S/)", fontSize = 13.sp, color = Color(0xFF757575), fontWeight = FontWeight.Medium)
+    Spacer(Modifier.height(6.dp))
+    OutlinedTextField(
+        value = monto,
+        onValueChange = onMontoChange,
+        modifier = Modifier.fillMaxWidth(),
+        singleLine = true,
+        prefix = { Text("S/ ", color = Color(0xFF757575), fontWeight = FontWeight.SemiBold) },
+        shape = RoundedCornerShape(12.dp),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = HappyGreen,
+            unfocusedBorderColor = Color(0xFFE0E0E0),
+        ),
+    )
+    Spacer(Modifier.height(16.dp))
+}
+
+@Composable
+private fun FormReservaCanchaSeccionFormaPago(
+    modoPago: ModoPagoCancha,
+    adelantoIngresado: String,
+    montosUi: MontosReservaFormularioUi,
+    onModoCancelado: () -> Unit,
+    onModoAdelanto: () -> Unit,
+    onAdelantoChange: (String) -> Unit,
+) {
+    Text("Forma de pago", fontSize = 13.sp, color = Color(0xFF757575), fontWeight = FontWeight.Medium)
+    Spacer(Modifier.height(4.dp))
+    Text(
+        "Cancelado = pago completo. Adelanto = dejó una parte y falta saldo en local.",
+        fontSize = 11.sp,
+        color = Color(0xFF9E9E9E),
+    )
+    Spacer(Modifier.height(8.dp))
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        ModoPagoOpcion(
+            texto = "Cancelado",
+            subtitulo = "Pago completo",
+            seleccionado = modoPago == ModoPagoCancha.Cancelado,
+            modifier = Modifier.weight(1f),
+            onClick = onModoCancelado,
+        )
+        ModoPagoOpcion(
+            texto = "Adelanto",
+            subtitulo = "Parcial",
+            seleccionado = modoPago == ModoPagoCancha.Adelanto,
+            modifier = Modifier.weight(1f),
+            onClick = onModoAdelanto,
+        )
+    }
+    if (modoPago == ModoPagoCancha.Adelanto) {
+        Spacer(Modifier.height(12.dp))
+        Text(
+            "Adelanto (S/) — fondo amarillo",
+            fontSize = 13.sp,
+            color = Color(0xFF795548),
+            fontWeight = FontWeight.Medium,
+        )
+        Spacer(Modifier.height(6.dp))
+        OutlinedTextField(
+            value = adelantoIngresado,
+            onValueChange = onAdelantoChange,
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            prefix = { Text("S/ ", color = Color(0xFF795548), fontWeight = FontWeight.SemiBold) },
+            shape = RoundedCornerShape(12.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = Color(0xFFFFC107),
+                unfocusedBorderColor = Color(0xFFFFE082),
+                focusedContainerColor = Color(0xFFFFFDE7),
+                unfocusedContainerColor = Color(0xFFFFFDE7),
+            ),
+        )
+    }
+    if (modoPago == ModoPagoCancha.Adelanto && montosUi.total > 0 && montosUi.saldoPendiente > 0) {
+        Spacer(Modifier.height(12.dp))
+        Surface(
+            shape = RoundedCornerShape(12.dp),
+            color = Color(0xFFE8F5E9),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(
+                text = "Saldo pendiente a pagar en local: S/ ${"%.2f".format(montosUi.saldoPendiente)}",
+                modifier = Modifier.padding(14.dp),
+                color = Color(0xFF2E7D32),
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 14.sp,
+            )
+        }
+    }
+    Spacer(Modifier.height(24.dp))
+}
+
+@Composable
+private fun FormReservaCanchaBotonGuardar(
+    guardando: Boolean,
+    onGuardarClick: () -> Unit,
+) {
+    Button(
+        onClick = onGuardarClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+            .height(52.dp),
+        enabled = !guardando,
+        shape = RoundedCornerShape(14.dp),
+        colors = ButtonDefaults.buttonColors(containerColor = HappyGreen),
+    ) {
+        Text("Guardar Reserva", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+        Spacer(Modifier.width(8.dp))
+        Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = Color.White)
+    }
+}
+
 @Composable
 private fun FormReservaCanchaDialog(
     fecha: String,
@@ -1449,6 +1783,7 @@ private fun FormReservaCanchaDialog(
     }
     var errorHorario by remember { mutableStateOf<String?>(null) }
     val scroll = rememberScrollState()
+    val montosUi = montosReservaFormularioUi(modoPago, monto, adelantoIngresado)
 
     FullscreenFormDialogScaffold(
         guardando = guardando,
@@ -1456,255 +1791,57 @@ private fun FormReservaCanchaDialog(
         title = "Registrar Reserva",
         scrollState = scroll,
         content = {
-                    Text(
-                        "Fecha",
-                        fontSize = 13.sp,
-                        color = Color(0xFF757575),
-                        fontWeight = FontWeight.Medium,
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    InfoCaja(
-                        modifier = Modifier.fillMaxWidth(),
-                        icon = { Icon(Icons.Outlined.CalendarMonth, null, tint = HappyGreen, modifier = Modifier.size(20.dp)) },
-                        texto = fechaCortaEs(fecha),
-                    )
-                    Spacer(Modifier.height(16.dp))
-                    Text(
-                        "Horario de juego",
-                        fontSize = 13.sp,
-                        color = Color(0xFF757575),
-                        fontWeight = FontWeight.Medium,
-                    )
-                    Text(
-                        "Formato 24 h (1:30 pm = 13:30). Ej. 11:00 a 13:30: dos horas y media; el monto se reparte en cada tramo.",
-                        fontSize = 12.sp,
-                        color = Color(0xFF9E9E9E),
-                        lineHeight = 16.sp,
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    ) {
-                        OutlinedTextField(
-                            value = horaIniText,
-                            onValueChange = { v ->
-                                errorHorario = null
-                                horaIniText = v.filter { c -> c.isDigit() || c == ':' }.take(5)
-                            },
-                            modifier = Modifier.weight(1f),
-                            label = { Text("Inicio (HH:mm)") },
-                            singleLine = true,
-                            placeholder = { Text("09:00") },
-                            shape = RoundedCornerShape(12.dp),
-                            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = HappyGreen),
-                        )
-                        OutlinedTextField(
-                            value = horaFinText,
-                            onValueChange = { v ->
-                                errorHorario = null
-                                horaFinText = v.filter { c -> c.isDigit() || c == ':' }.take(5)
-                            },
-                            modifier = Modifier.weight(1f),
-                            label = { Text("Fin (HH:mm)") },
-                            singleLine = true,
-                            placeholder = { Text("12:00") },
-                            shape = RoundedCornerShape(12.dp),
-                            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = HappyGreen),
-                        )
-                    }
-                    errorHorario?.let { err ->
-                        Spacer(Modifier.height(8.dp))
-                        Text(
-                            text = err,
-                            color = MaterialTheme.colorScheme.error,
-                            fontSize = 13.sp,
-                            lineHeight = 18.sp,
-                        )
-                    }
-                    Spacer(Modifier.height(20.dp))
-                    Text("Nombre del Cliente", fontSize = 13.sp, color = Color(0xFF757575), fontWeight = FontWeight.Medium)
-                    Spacer(Modifier.height(6.dp))
-                    OutlinedTextField(
-                        value = nombre,
-                        onValueChange = { nombre = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        placeholder = { Text("Ej. Carlos Mendoza") },
-                        shape = RoundedCornerShape(12.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = HappyGreen,
-                            unfocusedBorderColor = Color(0xFFE0E0E0),
-                        ),
-                    )
-                    Spacer(Modifier.height(16.dp))
-                    Text("Deporte", fontSize = 13.sp, color = Color(0xFF757575), fontWeight = FontWeight.Medium)
-                    Spacer(Modifier.height(8.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        HappyToggleOption(
-                            text = "Fútbol",
-                            selected = deporte == "Futbol",
-                            modifier = Modifier.weight(1f),
-                            onClick = { deporte = "Futbol" },
-                        )
-                        HappyToggleOption(
-                            text = "Vóley",
-                            selected = deporte == "Voley",
-                            modifier = Modifier.weight(1f),
-                            onClick = { deporte = "Voley" },
-                        )
-                    }
-                    Spacer(Modifier.height(16.dp))
-                    Text("Monto total (S/)", fontSize = 13.sp, color = Color(0xFF757575), fontWeight = FontWeight.Medium)
-                    Spacer(Modifier.height(6.dp))
-                    OutlinedTextField(
-                        value = monto,
-                        onValueChange = { monto = it.filter { c -> c.isDigit() || c == '.' || c == ',' } },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        prefix = { Text("S/ ", color = Color(0xFF757575), fontWeight = FontWeight.SemiBold) },
-                        shape = RoundedCornerShape(12.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = HappyGreen,
-                            unfocusedBorderColor = Color(0xFFE0E0E0),
-                        ),
-                    )
-                    Spacer(Modifier.height(16.dp))
-                    Text("Forma de pago", fontSize = 13.sp, color = Color(0xFF757575), fontWeight = FontWeight.Medium)
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        "Cancelado = pago completo. Adelanto = dejó una parte y falta saldo en local.",
-                        fontSize = 11.sp,
-                        color = Color(0xFF9E9E9E),
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        ModoPagoOpcion(
-                            texto = "Cancelado",
-                            subtitulo = "Pago completo",
-                            seleccionado = modoPago == ModoPagoCancha.Cancelado,
-                            modifier = Modifier.weight(1f),
-                            onClick = { modoPago = ModoPagoCancha.Cancelado },
-                        )
-                        ModoPagoOpcion(
-                            texto = "Adelanto",
-                            subtitulo = "Parcial",
-                            seleccionado = modoPago == ModoPagoCancha.Adelanto,
-                            modifier = Modifier.weight(1f),
-                            onClick = { modoPago = ModoPagoCancha.Adelanto },
-                        )
-                    }
-                    if (modoPago == ModoPagoCancha.Adelanto) {
-                        Spacer(Modifier.height(12.dp))
-                        Text(
-                            "Adelanto (S/) — fondo amarillo",
-                            fontSize = 13.sp,
-                            color = Color(0xFF795548),
-                            fontWeight = FontWeight.Medium,
-                        )
-                        Spacer(Modifier.height(6.dp))
-                        OutlinedTextField(
-                            value = adelantoIngresado,
-                            onValueChange = { adelantoIngresado = it.filter { c -> c.isDigit() || c == '.' || c == ',' } },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true,
-                            prefix = { Text("S/ ", color = Color(0xFF795548), fontWeight = FontWeight.SemiBold) },
-                            shape = RoundedCornerShape(12.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Color(0xFFFFC107),
-                                unfocusedBorderColor = Color(0xFFFFE082),
-                                focusedContainerColor = Color(0xFFFFFDE7),
-                                unfocusedContainerColor = Color(0xFFFFFDE7),
-                            ),
-                        )
-                    }
-                    val totalNum = monto.replace(",", ".").toDoubleOrNull() ?: 0.0
-                    val adelNum = when (modoPago) {
-                        ModoPagoCancha.Cancelado -> totalNum
-                        ModoPagoCancha.Adelanto -> adelantoIngresado.replace(",", ".").toDoubleOrNull() ?: 0.0
-                    }
-                    val saldoPendiente = (totalNum - adelNum).coerceAtLeast(0.0)
-                    if (modoPago == ModoPagoCancha.Adelanto && totalNum > 0 && saldoPendiente > 0) {
-                        Spacer(Modifier.height(12.dp))
-                        Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = Color(0xFFE8F5E9),
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            Text(
-                                text = "Saldo pendiente a pagar en local: S/ ${"%.2f".format(saldoPendiente)}",
-                                modifier = Modifier.padding(14.dp),
-                                color = Color(0xFF2E7D32),
-                                fontWeight = FontWeight.SemiBold,
-                                fontSize = 14.sp,
-                            )
-                        }
-                    }
-                    Spacer(Modifier.height(24.dp))
+            FormReservaCanchaSeccionFecha(fecha)
+            FormReservaCanchaSeccionHorario(
+                horaIniText = horaIniText,
+                horaFinText = horaFinText,
+                errorHorario = errorHorario,
+                onHoraIniChange = { v ->
+                    errorHorario = null
+                    horaIniText = v.filter { c -> c.isDigit() || c == ':' }.take(5)
+                },
+                onHoraFinChange = { v ->
+                    errorHorario = null
+                    horaFinText = v.filter { c -> c.isDigit() || c == ':' }.take(5)
+                },
+            )
+            FormReservaCanchaSeccionNombre(nombre) { nombre = it }
+            FormReservaCanchaSeccionDeporte(
+                deporte = deporte,
+                onElegirFutbol = { deporte = "Futbol" },
+                onElegirVoley = { deporte = "Voley" },
+            )
+            FormReservaCanchaSeccionMonto(monto) { monto = it.filter { c -> c.isDigit() || c == '.' || c == ',' } }
+            FormReservaCanchaSeccionFormaPago(
+                modoPago = modoPago,
+                adelantoIngresado = adelantoIngresado,
+                montosUi = montosUi,
+                onModoCancelado = { modoPago = ModoPagoCancha.Cancelado },
+                onModoAdelanto = { modoPago = ModoPagoCancha.Adelanto },
+                onAdelantoChange = { adelantoIngresado = it.filter { c -> c.isDigit() || c == '.' || c == ',' } },
+            )
         },
         bottomBar = {
-                Button(
-                    onClick = {
-                        if (guardando) return@Button
-                        val mt = monto.replace(",", ".").toDoubleOrNull() ?: 0.0
-                        if (nombre.isBlank() || mt <= 0) return@Button
-                        val adEnviarTotal = when (modoPago) {
-                            ModoPagoCancha.Cancelado -> mt
-                            ModoPagoCancha.Adelanto -> {
-                                val a = adelantoIngresado.replace(",", ".").toDoubleOrNull() ?: 0.0
-                                if (a <= 0 || a > mt) return@Button
-                                a
-                            }
-                        }
-                        val fechaSel = fechaParsed ?: return@Button
-                        mensajeRangoCanchaInvalido(horaIniText, horaFinText, fechaSel)?.let {
-                            errorHorario = it
-                            return@Button
-                        }
-                        val franjas = franjasCanchaEntreDetalle(horaIniText, horaFinText, fechaSel)
-                        if (franjas.isEmpty()) {
-                            errorHorario = "Revisa las horas: no se pudo armar el turno."
-                            return@Button
-                        }
-                        if (inicioTurnoCanchaEsPasado(fechaSel, horaIniText)) {
-                            errorHorario =
-                                "La hora de inicio ya pasó. Pon una hora desde este minuto en adelante."
-                            return@Button
-                        }
-                        val n = franjas.size
-                        val montos = repartirMontoSoles(mt, n)
-                        val adelantos = repartirMontoSoles(adEnviarTotal, n)
-                        val lista = franjas.mapIndexed { i, f ->
-                            ReservaCanchaCreate(
-                                nombreCliente = nombre.trim(),
-                                deporte = deporte,
-                                fecha = fecha,
-                                hora = f.horaInicioSql,
-                                montoTotal = montos[i],
-                                adelanto = adelantos[i],
-                                duracionMinutos = f.duracionMinutos,
-                            )
-                        }
-                        onConfirm(lista)
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                        .height(52.dp),
-                    enabled = !guardando,
-                    shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = HappyGreen),
+            FormReservaCanchaBotonGuardar(guardando = guardando) {
+                when (
+                    val r = intentarConstruirReservasCanchaForm(
+                        guardando = guardando,
+                        nombre = nombre,
+                        monto = monto,
+                        modoPago = modoPago,
+                        adelantoIngresado = adelantoIngresado,
+                        fechaParsed = fechaParsed,
+                        fechaIso = fecha,
+                        deporte = deporte,
+                        horaIniText = horaIniText,
+                        horaFinText = horaFinText,
+                    )
                 ) {
-                    Text("Guardar Reserva", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                    Spacer(Modifier.width(8.dp))
-                    Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = Color.White)
+                    is FormReservaCanchaGuardarResult.ErrorHorario -> errorHorario = r.mensaje
+                    is FormReservaCanchaGuardarResult.Exito -> onConfirm(r.lista)
+                    null -> Unit
                 }
+            }
         },
     )
 }
