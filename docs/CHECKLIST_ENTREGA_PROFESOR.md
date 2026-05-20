@@ -37,10 +37,27 @@
 
 | Archivo / acción | Uso |
 |------------------|-----|
+| [`GUIA_JENKINS_CI_CD.md`](GUIA_JENKINS_CI_CD.md) | **Laboratorio CI/CD:** Jenkins + SonarQube Docker + scripts `ci/build-production.sh` y `ci/deploy-server.sh`. |
+| [`GUIA_JENKINS_TOMCAT_SONAR_DOCKER.md`](GUIA_JENKINS_TOMCAT_SONAR_DOCKER.md) | Guía anterior (Tomcat); solo si el curso lo exige explícitamente. |
+| `infra/docker/docker-compose.yml` | `docker compose up -d` → Sonar :9000, Jenkins :8081. |
+
+## 5b. Calidad — SonarCloud, Snyk, unit tests (CI GitHub)
+
+| Archivo / acción | Uso |
+|------------------|-----|
 | `docs/EVIDENCIAS_CALIDAD_SONAR_SNYK.md` | Plantilla profesional: enlaces, secretos GitHub, tablas para pegar métricas y bitácora de correcciones. |
-| GitHub → **Actions** | Capturas de jobs *SonarCloud* y *Snyk Security* como evidencia. |
+| GitHub → **Actions** | Capturas de jobs *API Tests*, *SonarCloud* y *Snyk Security* como evidencia. |
 | SonarCloud / Snyk (web) | Capturas del *Quality Gate* y del informe de vulnerabilidades (última clase / entrega). |
 | `./gradlew :app:testDebugUnitTest :app:jacocoTestReport` | Reproducir tests y cobertura local. |
+
+---
+
+## Cronograma tipo Gantt (planificación 3 semanas)
+
+| Archivo | Uso |
+|---------|-----|
+| [`CRONOGRAMA_GANTT_HAPPY_JUMP.md`](CRONOGRAMA_GANTT_HAPPY_JUMP.md) | Versión corta (6 tareas en cadena) + Mermaid. |
+| [`CRONOGRAMA_GANTTIO_HAPPY_JUMP.md`](CRONOGRAMA_GANTTIO_HAPPY_JUMP.md) | **Cronograma estilo curso (20 mar – may/jun 2026):** 5 fases, sprints, Sonar/Snyk, cierre; tabla para **gantt.io** + CSV `cronograma_ganttio_happy_jump_import.csv`. |
 
 ---
 
@@ -52,3 +69,4 @@
 | 3. Plan de pruebas | **Listo:** `PLAN_MAESTRO_PRUEBAS_SOFTWARE_HAPPY_JUMP.md` |
 | 4. Casos de prueba | **Listo:** `CASOS_DE_PRUEBA.csv` |
 | 5. Sonar / Snyk / auditoría | **Listo (plantilla + CI):** `EVIDENCIAS_CALIDAD_SONAR_SNYK.md` — completar tablas con números reales antes de entregar. |
+| 5b. Jenkins / Sonar Docker + deploy scripts | **Guía:** `GUIA_JENKINS_CI_CD.md` — pipeline verde + `~/servers/happyjump/logs/deploy.log`. |

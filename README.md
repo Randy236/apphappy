@@ -6,7 +6,7 @@ Aplicacion movil Android para gestion de reservas de cancha y salones, con roles
 
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=Randy236_apphappy&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=Randy236_apphappy)
 
-En GitHub Actions: análisis **SonarCloud** (tests + JaCoCo) y **Snyk** en dependencias. Requiere secretos `SONAR_TOKEN` y `SNYK_TOKEN`. Detalle y plantilla para evidencias académicas: [`docs/EVIDENCIAS_CALIDAD_SONAR_SNYK.md`](docs/EVIDENCIAS_CALIDAD_SONAR_SNYK.md).
+En GitHub Actions: **API Tests** (`server/`, `npm run test:ci`), **SonarCloud** (Android + JaCoCo) y **Snyk** en dependencias. Secretos: `SONAR_TOKEN` y `SNYK_TOKEN` (Sonar/Snyk). Detalle: [`docs/EVIDENCIAS_CALIDAD_SONAR_SNYK.md`](docs/EVIDENCIAS_CALIDAD_SONAR_SNYK.md).
 
 ## Stack
 
@@ -104,6 +104,13 @@ Tipos recomendados de commit:
 - `refactor:` mejora interna
 - `test:` pruebas
 - `docs:` documentacion
+
+## CI/CD (Jenkins + scripts)
+
+- Guía: [`docs/GUIA_JENKINS_CI_CD.md`](docs/GUIA_JENKINS_CI_CD.md)
+- Build: `ci/build-production.sh` → `dist/` (API `.tar.gz` + APK)
+- Deploy: `ci/deploy-server.sh` → `~/servers/happyjump/`
+- Pipeline: `Jenkinsfile` (tests → Sonar → build → deploy)
 
 ## Material para curso
 

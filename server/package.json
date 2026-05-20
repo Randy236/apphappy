@@ -10,7 +10,9 @@
     "migrate:005": "node scripts/apply-migration-005.mjs",
     "migrate:008": "node scripts/apply-migration-008.mjs",
     "demo:reset-ventas": "node scripts/apply-cleanup-ventas-y-sesiones.mjs",
-    "cleanup:ventas-y-sesiones": "node scripts/apply-cleanup-ventas-y-sesiones.mjs"
+    "cleanup:ventas-y-sesiones": "node scripts/apply-cleanup-ventas-y-sesiones.mjs",
+    "test": "node --test test/*.test.mjs",
+    "test:ci": "node --test test/*.test.mjs"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

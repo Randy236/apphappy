@@ -97,6 +97,7 @@ Abre el proyecto en SonarCloud (misma organización y `projectKey` que en `sonar
 
 | Workflow | Disparadores | Contenido relevante |
 |----------|--------------|---------------------|
+| `api-tests.yml` | `push` / `pull_request` en `main` y `develop`; manual | `npm ci` + `npm run test:ci` en `server/` (API Node) |
 | `sonarcloud.yml` | `push` / `pull_request` en `main` y `develop` | `:app:testDebugUnitTest`, `:app:jacocoTestReport`, `sonar` |
 | `snyk.yml` | `push` / `pull_request` en `main` y `develop`; manual | `snyk test --all-projects` |
 

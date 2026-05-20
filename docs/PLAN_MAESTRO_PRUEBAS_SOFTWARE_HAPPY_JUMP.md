@@ -199,7 +199,7 @@ Nuevo → Asignado → En corrección → Verificado → Cerrado (o Reabierto si
 
 ### 5.3. Pipeline CI/CD y quality gates
 
-- **Estado actual:** en GitHub Actions se ejecutan **pruebas unitarias + JaCoCo**, análisis **SonarCloud** y escaneo **Snyk** en ramas `main` y `develop` (y PRs), con secretos `SONAR_TOKEN` y `SNYK_TOKEN`.
+- **Estado actual:** en GitHub Actions se ejecutan **pruebas API** (`api-tests.yml`, `npm run test:ci` en `server/`), **pruebas Android + JaCoCo**, análisis **SonarCloud** y escaneo **Snyk** en ramas `main` y `develop` (y PRs), con secretos `SONAR_TOKEN` y `SNYK_TOKEN`.
 - **Objetivo:** mantener quality gate en SonarCloud y revisar hotspots de seguridad; registrar métricas y capturas en `EVIDENCIAS_CALIDAD_SONAR_SNYK.md` por entrega.
 
 ---
@@ -228,6 +228,8 @@ Nuevo → Asignado → En corrección → Verificado → Cerrado (o Reabierto si
 ---
 
 ## 7. Cronograma e hitos
+
+**Diagrama tipo Gantt (3 semanas, 6 tareas secuenciales, trazado al repo):** ver `docs/CRONOGRAMA_GANTT_HAPPY_JUMP.md` (tabla + Mermaid exportable).
 
 | Fase | Actividades |
 |------|-------------|

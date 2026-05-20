@@ -1,5 +1,6 @@
 *.iml
 .gradle
+.gradle-jenkins
 /local.properties
 /.idea/caches
 /.idea/libraries
@@ -34,3 +35,17 @@ yarn-error.log*
 Thumbs.db
 *.log
 hs_err_pid*.log
+
+# Salida de ci/deploy-server.sh (Jenkins Docker)
+deploy-runtime/
+
+# Docker Compose (datos en D:\apphappy\infra\docker\data)
+infra/docker/data/
+
+# Caches en disco D (proyecto)
+.gradle/
+.gradle-jenkins/
+.gradle-preflight/
+.gradle-ci/
+.npm-cache/
+tmp/
