@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { pool } from "./db.js";
+import { setupSwagger } from "./swagger.js";
 
 dotenv.config();
 
@@ -25,10 +26,25 @@ const SALONES_VALIDOS = [
 const app = express();
 app.use(cors());
 app.use(express.json());
+setupSwagger(app, PORT);
 
 /** Prueba rápida desde el navegador del celular: http://IP_DE_TU_PC:3000/health */
 app.get("/health", (req, res) => {
   res.json({ ok: true, service: "happy-jump-api" });
+});
+
+/** Endpoints ligeros para k6 (sin auth, sin DB) — ver docs/TUTORIAL_K6_HAPPY_JUMP.md */
+app.get("/hello", (req, res) => {
+  res.type("text").send("Good Morning");
+});
+
+app.get("/sumar", (req, res) => {
+  const a = Number(req.query.a);
+  const b = Number(req.query.b);
+  if (Number.isNaN(a) || Number.isNaN(b)) {
+    return res.status(400).type("text").send("error");
+  }
+  res.type("text").send(String(a + b));
 });
 
 function calcularEstadoCancha(adelanto, montoTotal) {
@@ -750,6 +766,7 @@ seed()
   .then(() => {
     app.listen(PORT, "0.0.0.0", () => {
       console.log(`Happy Jump API http://0.0.0.0:${PORT}`);
+      console.log(`Swagger UI http://localhost:${PORT}/swagger-ui/`);
     });
   })
   .catch((e) => {

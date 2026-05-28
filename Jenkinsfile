@@ -1,5 +1,5 @@
 // Happy Jump — Jenkins: API Node + Android + SonarQube + build/deploy por scripts
-// Guía: docs/GUIA_JENKINS_CI_CD.md
+// Guia: docs/GUIA_JENKINS_CI_CD.md
 
 pipeline {
     agent any
@@ -49,15 +49,15 @@ pipeline {
                 stage('Android (unitarias + JaCoCo)') {
                     steps {
                         sh '''
-                            docker --version
-                            docker pull "${ANDROID_IMAGE}" || true
-                            docker run --rm \
-                              -v "${PROJECT_DIR}:/project" \
-                              -w /project \
-                              -e GRADLE_USER_HOME=/project/.gradle-jenkins \
-                              "${ANDROID_IMAGE}" \
-                              bash -lc "chmod +x gradlew && ./gradlew :app:testDebugUnitTest :app:jacocoTestReport --no-daemon -Dorg.gradle.jvmargs='-Xmx2560m'"
-                        '''
+docker --version
+docker pull "${ANDROID_IMAGE}" || true
+docker run --rm \
+  -v "${PROJECT_DIR}:/project" \
+  -w /project \
+  -e GRADLE_USER_HOME=/project/.gradle-jenkins \
+  "${ANDROID_IMAGE}" \
+  bash -lc "chmod +x gradlew && ./gradlew :app:testDebugUnitTest :app:jacocoTestReport --no-daemon -Dorg.gradle.jvmargs='-Xmx2560m'"
+'''
                     }
                 }
             }
@@ -68,19 +68,19 @@ pipeline {
                 withSonarQubeEnv('sonarqube') {
                     withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
                         sh '''
-                            docker run --rm \
-                              --network "${DOCKER_NETWORK}" \
-                              -v "${PROJECT_DIR}:/project" \
-                              -w /project \
-                              -e SONAR_TOKEN \
-                              -e SONAR_HOST_URL="${SONAR_HOST_URL}" \
-                              "${ANDROID_IMAGE}" \
-                              bash -lc "chmod +x gradlew && ./gradlew sonar \
-                                -Dproject.settings=sonar-project.local.properties \
-                                -Dsonar.host.url=${SONAR_HOST_URL} \
-                                -Dsonar.token=${SONAR_TOKEN} \
-                                --no-daemon -Dorg.gradle.jvmargs='-Xmx2560m'"
-                        '''
+docker run --rm \
+  --network "${DOCKER_NETWORK}" \
+  -v "${PROJECT_DIR}:/project" \
+  -w /project \
+  -e SONAR_TOKEN \
+  -e SONAR_HOST_URL="${SONAR_HOST_URL}" \
+  "${ANDROID_IMAGE}" \
+  bash -lc "chmod +x gradlew && ./gradlew sonar \
+    -Dproject.settings=sonar-project.local.properties \
+    -Dsonar.host.url=${SONAR_HOST_URL} \
+    -Dsonar.token=${SONAR_TOKEN} \
+    --no-daemon -Dorg.gradle.jvmargs='-Xmx2560m'"
+'''
                     }
                 }
             }
@@ -108,7 +108,7 @@ pipeline {
             echo "Pipeline OK — API y APK en ${HAPPYJUMP_DEPLOY_BASE}"
         }
         failure {
-            echo 'Pipeline falló — revisa consola (Node, Gradle, Sonar, ci/*.sh)'
+            echo 'Pipeline fallo — revisa consola (Node, Gradle, Sonar, ci/*.sh)'
         }
     }
 }

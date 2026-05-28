@@ -1,0 +1,25 @@
+Summary,Issue Type,Description,Priority,Labels,Epic Name,Sprint
+Autenticación y seguridad,Epic,Login PIN sesión única usuarios. CMMI: REQM PP,High,"happy-jump,cmmi-reqm,cmmi-pp",,
+Reservas de cancha,Epic,CRUD cancha deportiva. CMMI: REQM VER,High,"happy-jump,cmmi-reqm,cmmi-ppqa",,
+Reservas de salones,Epic,Eventos y salones. CMMI: REQM,High,"happy-jump,cmmi-reqm",,
+Reportes administrador,Epic,Ingresos y cancelaciones admin. CMMI: REQM VAL,Medium,"happy-jump,cmmi-reqm,cmmi-ma",,
+App Android UI,Epic,Jetpack Compose. CMMI: VER,High,"happy-jump,cmmi-ppqa",,
+Calidad CI/CD,Epic,Jenkins k6 Swagger Sonar. CMMI: PPQA MA CM,Medium,"happy-jump,cmmi-ppqa,cmmi-ma,cmmi-cm",,
+Gestión Scrum y CMMI,Epic,Jira ceremonias evidencias profesor. CMMI: PP PMC,Medium,"happy-jump,cmmi-pp,cmmi-pmc",,
+Login nombre y PIN,Story,"Como usuario quiero login para acceder. CA: token JWT sesión. API POST /auth/login",Highest,"cmmi-reqm,cmmi-ver",Autenticación y seguridad,Sprint 1
+Sesión única dispositivo,Story,Un solo active_token por usuario. CMMI REQM,High,cmmi-reqm,Autenticación y seguridad,Sprint 2
+Listar y crear reserva cancha,Story,GET POST /reservas-cancha validación horarios,Highest,"cmmi-reqm,cmmi-ver",Reservas de cancha,Sprint 1
+Cancelar y cobrar cancha,Story,PUT cobrar-saldo y cancelar con motivo,Medium,cmmi-ver,Reservas de cancha,Sprint 2
+Reservas salones trabajador,Story,POST salones solo trabajador,Highest,cmmi-reqm,Reservas de salones,Sprint 2
+Reportes admin periodo,Story,GET /reportes diario semanal mensual,High,"cmmi-reqm,cmmi-ma",Reportes administrador,Sprint 2
+Pantallas Compose principales,Story,Login cancha salones perfil reportes,High,cmmi-ver,App Android UI,Sprint 1-2
+Pruebas k6 rendimiento,Task,load smoke stress. Evidencia MA,Medium,"cmmi-ma,cmmi-ppqa",Calidad CI/CD,Sprint 3
+Swagger OpenAPI,Task,Documentación API /swagger-ui,Medium,cmmi-reqm,Calidad CI/CD,Sprint 3
+SonarCloud y tests CI,Task,GitHub Actions quality gate,Medium,"cmmi-ppqa,cmmi-ma",Calidad CI/CD,Sprint 3
+Jenkins pipeline,Task,Jenkinsfile build deploy,Low,"cmmi-cm,cmmi-ppqa",Calidad CI/CD,Sprint 3
+Configurar Jira Scrum,Task,Proyecto HJ importar CSV tablero,High,cmmi-pp,Gestión Scrum y CMMI,Sprint 3
+Sprint Planning documentado,Task,Acta planning + captura Jira,Medium,"cmmi-pp,cmmi-pmc",Gestión Scrum y CMMI,Sprint 3
+Daily Scrum bitácora,Task,Completar docs/scrum/daily-log.md,Medium,cmmi-pmc,Gestión Scrum y CMMI,Sprint 3
+Sprint Review y demo,Task,Demo app Swagger evidencia fotos,Medium,"cmmi-pmc,cmmi-ver",Gestión Scrum y CMMI,Sprint 3
+Retrospectiva sprint,Task,docs/scrum/retrospectiva-sprint-N.md,Medium,cmmi-pmc,Gestión Scrum y CMMI,Sprint 3
+Matriz trazabilidad REQM,Task,RF-REQ-CP en docs,Medium,cmmi-reqm,Gestión Scrum y CMMI,Sprint 3

@@ -1,0 +1,36 @@
+Summary,Issue Type,Description,Priority,Labels,Epic Name
+Autenticación y seguridad,Epic,Login PIN sesión única y gestión de usuarios,High,happy-jump,
+Reservas de cancha,Epic,CRUD y operaciones de cancha deportiva,High,happy-jump,
+Reservas de salones,Epic,Reservas de salones para eventos,High,happy-jump,
+Reportes administrador,Epic,Dashboard e informes solo admin,Medium,happy-jump,
+App Android (UI),Epic,Pantallas Jetpack Compose y consumo API,High,happy-jump,
+Calidad CI/CD y pruebas,Epic,Sonar Jenkins k6 Swagger GitHub Actions,Medium,happy-jump,
+Documentación y entrega,Epic,Guías evidencias y checklist del profesor,Low,happy-jump,
+Login con nombre y PIN,Story,"Como trabajador quiero iniciar sesión con nombre y PIN para acceder a la app. API: POST /auth/login",Highest,backend;android,Autenticación y seguridad
+Sesión única por dispositivo,Story,"Evitar dos dispositivos con el mismo usuario activo. Token en BD active_token",High,backend,Autenticación y seguridad
+Cerrar sesión,Story,"POST /auth/logout limpia active_token",Medium,backend;android,Autenticación y seguridad
+Cambiar PIN desde perfil,Story,"PUT /usuarios/{id}/pin con PIN actual y nuevo",Medium,backend;android,Autenticación y seguridad
+Listar reservas de cancha,Story,"GET /reservas-cancha con filtros desde y hasta",High,backend;android,Reservas de cancha
+Crear reserva de cancha,Story,"POST con validación horarios 8-22 traslapes y deporte",Highest,backend;android,Reservas de cancha
+Cobrar saldo cancha,Story,"PUT /reservas-cancha/{id}/cobrar-saldo",Medium,backend;android,Reservas de cancha
+Cancelar reserva cancha,Story,"PUT cancelar con motivo obligatorio",Medium,backend;android,Reservas de cancha
+Listar reservas salones,Story,"GET /reservas-salones filtro por salón y fechas",High,backend;android,Reservas de salones
+Crear reserva salón (trabajador),Story,"POST solo rol trabajador validar traslapes",Highest,backend;android,Reservas de salones
+Cobrar saldo salón,Story,"PUT cobrar saldo salón",Medium,backend,Reservas de salones
+Cancelar reserva salón,Story,"PUT cancelar con motivo",Medium,backend;android,Reservas de salones
+Reporte ingresos por periodo,Story,"GET /reportes diario semanal mensual solo admin",High,backend;android,Reportes administrador
+Reporte de cancelaciones,Story,"GET /reportes/cancelaciones",Medium,backend,Reportes administrador
+Pantalla login Compose,Story,UI login conectada a API,High,android,App Android (UI)
+Pantalla cancha y calendario,Story,UI reservas cancha estados colores,High,android,App Android (UI)
+Pantalla salones,Story,UI salones y formulario reserva,High,android,App Android (UI)
+Pantalla reportes admin,Story,Gráficos y resumen periodo,Medium,android,App Android (UI)
+Pantalla perfil e historial,Story,Cambio PIN logout historial,Medium,android,App Android (UI)
+Pipeline Jenkins API y Android,Task,Jenkinsfile npm test gradle sonar build deploy,Medium,devops,Calidad CI/CD y pruebas
+Pruebas rendimiento k6,Task,load smoke stress en /hello y /sumar,Medium,testing,Calidad CI/CD y pruebas
+Swagger documentación API,Task,openapi.json swagger-ui en Express,Medium,docs,Calidad CI/CD y pruebas
+SonarCloud y Snyk en GitHub,Task,Actions quality gate dependencias,Medium,devops,Calidad CI/CD y pruebas
+Docker Jenkins Sonar local,Task,compose infra scripts disco E,Low,devops,Calidad CI/CD y pruebas
+Checklist entrega profesor,Task,Completar CHECKLIST_ENTREGA_PROFESOR.md,Medium,docs,Documentación y entrega
+Guía despliegue y pruebas,Task,DESPLIEGUE_Y_PRUEBAS_CHECKLIST.md,Low,docs,Documentación y entrega
+Esquema MySQL y migraciones,Task,schema.sql migraciones 004 005 008,High,backend,Reservas de cancha
+Configurar proyecto en Jira,Task,Crear proyecto Scrum importar CSV tablero,Low,gestion,Documentación y entrega

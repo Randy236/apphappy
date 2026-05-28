@@ -12,7 +12,8 @@
     "demo:reset-ventas": "node scripts/apply-cleanup-ventas-y-sesiones.mjs",
     "cleanup:ventas-y-sesiones": "node scripts/apply-cleanup-ventas-y-sesiones.mjs",
     "test": "node --test test/*.test.mjs",
-    "test:ci": "node --test test/*.test.mjs"
+    "test:ci": "node --test test/*.test.mjs",
+    "k6:api": "node scripts/k6-api.mjs"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -20,6 +21,7 @@
     "dotenv": "^16.4.5",
     "express": "^4.21.0",
     "jsonwebtoken": "^9.0.2",
-    "mysql2": "^3.11.3"
+    "mysql2": "^3.11.3",
+    "swagger-ui-express": "^5.0.1"
   }
 }

@@ -1,7 +1,25 @@
+# Minimo estable: Pipeline + Git + Sonar + Node + Docker
 git
-workflow-aggregator
+workflow-job
+workflow-cps
+workflow-scm-step
+workflow-basic-steps
+pipeline-model-definition
 pipeline-stage-view
-docker-workflow
 credentials-binding
+credentials
+scm-api
+structs
+script-security
+plugin-util-api
+branch-api
+cloudbees-folder
+jackson2-api
+display-url-api
+workflow-api
+workflow-durable-task-step
+workflow-support
+plain-credentials
 sonar
 nodejs
+docker-workflow
