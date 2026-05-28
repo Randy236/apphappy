@@ -49,19 +49,22 @@ jobs:
           fi
           echo "SONAR_TOKEN configurado"
 
-      - name: Subir análisis y cobertura a SonarCloud
-        uses: SonarSource/sonarcloud-github-action@v2
+      # Sonar recomienda plugin Gradle (no sonarcloud-github-action) en proyectos Android/Gradle
+      - name: Subir análisis y cobertura (Gradle sonar)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        with:
-          args: >
-            -Dsonar.coverage.jacoco.xmlReportPaths=app/build/reports/jacoco/jacocoTestReport/jacocoTestReport.xml
-            -Dsonar.java.binaries=app/build/tmp/kotlin-classes/debug
-            -Dsonar.junit.reportPaths=app/build/test-results/testDebugUnitTest
+        run: |
+          chmod +x gradlew
+          ./gradlew sonar --no-daemon --info 2>&1 | tee sonar-log.txt
+          if [ ${PIPESTATUS[0]} -ne 0 ]; then
+            echo "::error::Gradle sonar falló. Busca ERROR en sonar-log.txt (suele ser SONAR_TOKEN inválido)"
+            grep -i "error\|unauthorized\|quality gate" sonar-log.txt | tail -30 || true
+            exit 1
+          fi
 
       - name: Guardar informe JaCoCo (evidencia ítem 3)
-        if: success()
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: jacoco-html
