@@ -40,13 +40,30 @@ jobs:
           echo "JaCoCo XML: $(wc -c < app/build/reports/jacoco/jacocoTestReport/jacocoTestReport.xml) bytes"
           test -d app/build/tmp/kotlin-classes/debug && echo "kotlin-classes OK" || echo "WARN kotlin-classes"
 
-      - name: Análisis SonarCloud
+      - name: Comprobar SONAR_TOKEN
+        run: |
+          if [ -z "${{ secrets.SONAR_TOKEN }}" ]; then
+            echo "::error::Crea el secreto SONAR_TOKEN en GitHub → Settings → Secrets → Actions"
+            echo "Token en https://sonarcloud.io → My Account → Security → Generate Token"
+            exit 1
+          fi
+          echo "SONAR_TOKEN configurado"
+
+      - name: Subir análisis y cobertura a SonarCloud
+        uses: SonarSource/sonarcloud-github-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: |
-          if [ -z "$SONAR_TOKEN" ]; then
-            echo "::error::Falta el secreto SONAR_TOKEN en GitHub (Settings → Secrets → Actions)"
-            exit 1
-          fi
-          ./gradlew -Dorg.gradle.jvmargs="-Xmx2560m -XX:MaxMetaspaceSize=512m -Dfile.encoding=UTF-8" sonar --no-daemon
+        with:
+          args: >
+            -Dsonar.coverage.jacoco.xmlReportPaths=app/build/reports/jacoco/jacocoTestReport/jacocoTestReport.xml
+            -Dsonar.java.binaries=app/build/tmp/kotlin-classes/debug
+            -Dsonar.junit.reportPaths=app/build/test-results/testDebugUnitTest
+
+      - name: Guardar informe JaCoCo (evidencia ítem 3)
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-html
+          path: app/build/reports/jacoco/jacocoTestReport/
+          retention-days: 14
