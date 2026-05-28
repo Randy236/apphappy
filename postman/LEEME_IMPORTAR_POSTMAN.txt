@@ -1,0 +1,31 @@
+HAPPY JUMP — IMPORTAR EN POSTMAN (2 minutos)
+============================================
+
+ARCHIVOS (usa estos 2):
+  1) HappyJump-API.postman_collection.json
+  2) HappyJump-local.postman_environment.json
+
+RUTA EN TU PC:
+  D:\apphappy-full\postman\
+  (tambien en D:\apphappy\postman\)
+
+PASOS:
+  1) Abre Postman (app de escritorio o web)
+  2) Clic en "Import" (arriba izquierda)
+  3) Arrastra los 2 archivos .json de esta carpeta
+     O: File -> Upload Files
+  4) Import -> Finish
+  5) Arriba a la derecha elige entorno: "Happy Jump — Local"
+  6) En Collections veras: "Happy Jump API — Pruebas integrales"
+
+ANTES DE PROBAR:
+  cd D:\apphappy-full\server
+  npm start
+  (Si sale EADDRINUSE el puerto 3000 ya esta en uso = API ya corre)
+
+PRUEBA RAPIDA:
+  Collection -> 01 Sistema -> CP-006 GET /health -> Send
+
+EVIDENCIA PARA EL PROFESOR:
+  Clic derecho en la coleccion -> Run collection -> Run
+  Captura pantalla: todos los tests en verde
