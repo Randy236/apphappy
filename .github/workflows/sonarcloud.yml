@@ -10,6 +10,7 @@ on:
     branches: [main, develop]
   pull_request:
     types: [opened, synchronize, reopened]
+  workflow_dispatch:
 
 jobs:
   sonar:
@@ -31,10 +32,21 @@ jobs:
 
       # Más heap que gradle.properties local (1536m) evita que el daemon muera en CI al compilar + tests.
       - name: Pruebas unitarias + informe JaCoCo
-        run: chmod +x gradlew && ./gradlew -Dorg.gradle.jvmargs="-Xmx2560m -XX:MaxMetaspaceSize=512m -Dfile.encoding=UTF-8" :app:testDebugUnitTest :app:jacocoTestReport --no-daemon
+        run: chmod +x gradlew && ./gradlew -Dorg.gradle.jvmargs="-Xmx2560m -XX:MaxMetaspaceSize=512m -Dfile.encoding=UTF-8" :app:testDebugUnitTest :app:jacocoTestReport :app:printJacocoTotals --no-daemon
+
+      - name: Verificar JaCoCo (sin esto Sonar muestra "Coverage No data")
+        run: |
+          test -f app/build/reports/jacoco/jacocoTestReport/jacocoTestReport.xml
+          echo "JaCoCo XML: $(wc -c < app/build/reports/jacoco/jacocoTestReport/jacocoTestReport.xml) bytes"
+          test -d app/build/tmp/kotlin-classes/debug && echo "kotlin-classes OK" || echo "WARN kotlin-classes"
 
       - name: Análisis SonarCloud
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: ./gradlew -Dorg.gradle.jvmargs="-Xmx2560m -XX:MaxMetaspaceSize=512m -Dfile.encoding=UTF-8" sonar --no-daemon
+        run: |
+          if [ -z "$SONAR_TOKEN" ]; then
+            echo "::error::Falta el secreto SONAR_TOKEN en GitHub (Settings → Secrets → Actions)"
+            exit 1
+          fi
+          ./gradlew -Dorg.gradle.jvmargs="-Xmx2560m -XX:MaxMetaspaceSize=512m -Dfile.encoding=UTF-8" sonar --no-daemon
