@@ -1,0 +1,11 @@
+# Use this workspace to collaborate
+workspace:
+  id: a82970b1-e482-48b0-83a4-a7e9734e6ab0
+
+localResources:
+  collections:
+    - ..\docs\postman\HappyJump-API.postman_collection.json
+  environments:
+    - ..\docs\postman\HappyJump-local.postman_environment.json
+  specs:
+    - ..\server\openapi.json

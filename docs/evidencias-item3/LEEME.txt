@@ -1,0 +1,8 @@
+Carpeta para evidencias del ITEM 3 del profesor.
+
+Guarda aqui:
+  - sonarcloud-cobertura.png   (dashboard Coverage >= 80%)
+  - github-actions-sonarcloud.png   (workflow verde)
+  - jacoco-html.png   (opcional, informe local)
+
+Ver guia: docs/GUIA_ITEM3_SONAR_COBERTURA.md
