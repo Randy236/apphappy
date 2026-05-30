@@ -4,13 +4,11 @@
 pipeline {
     agent any
 
-    // Node/npm van en la imagen Docker de Jenkins (sin descarga automatica de plugins)
-
     environment {
         ANDROID_IMAGE = 'mingc/android-build-box:latest'
         PROJECT_DIR = "${env.WORKSPACE}"
         BUILD_ID = "${env.BUILD_NUMBER ?: 'local'}-${env.GIT_COMMIT?.take(7) ?: 'nosha'}"
-        HAPPYJUMP_DEPLOY_BASE = "${env.HAPPYJUMP_DEPLOY_BASE ?: "${env.HOME}/servers/happyjump"}"
+        HAPPYJUMP_DEPLOY_BASE = "${env.HAPPYJUMP_DEPLOY_BASE ?: '/var/jenkins_home/servers/happyjump'}"
         DOCKER_NETWORK = "${env.DOCKER_NETWORK ?: 'happyjump-ci_default'}"
     }
 
@@ -46,16 +44,7 @@ pipeline {
                 }
                 stage('Android (unitarias + JaCoCo)') {
                     steps {
-                        sh '''
-docker --version
-docker pull "${ANDROID_IMAGE}" || true
-docker run --rm \
-  -v "${PROJECT_DIR}:/project" \
-  -w /project \
-  -e GRADLE_USER_HOME=/project/.gradle-jenkins \
-  "${ANDROID_IMAGE}" \
-  bash -lc "chmod +x gradlew && ./gradlew :app:testDebugUnitTest :app:jacocoTestReport --no-daemon -Dorg.gradle.jvmargs='-Xmx2560m'"
-'''
+                        sh 'chmod +x ci/jenkins-run-gradle.sh && ./ci/jenkins-run-gradle.sh :app:testDebugUnitTest :app:jacocoTestReport'
                     }
                 }
             }
@@ -65,20 +54,7 @@ docker run --rm \
             steps {
                 withSonarQubeEnv('sonarqube') {
                     withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
-                        sh '''
-docker run --rm \
-  --network "${DOCKER_NETWORK}" \
-  -v "${PROJECT_DIR}:/project" \
-  -w /project \
-  -e SONAR_TOKEN \
-  -e SONAR_HOST_URL="${SONAR_HOST_URL}" \
-  "${ANDROID_IMAGE}" \
-  bash -lc "chmod +x gradlew && ./gradlew sonar \
-    -Dproject.settings=sonar-project.local.properties \
-    -Dsonar.host.url=${SONAR_HOST_URL} \
-    -Dsonar.token=${SONAR_TOKEN} \
-    --no-daemon -Dorg.gradle.jvmargs='-Xmx2560m'"
-'''
+                        sh 'chmod +x ci/jenkins-run-sonar.sh && ./ci/jenkins-run-sonar.sh'
                     }
                 }
             }
