@@ -4,9 +4,7 @@
 pipeline {
     agent any
 
-    tools {
-        nodejs 'NodeJS 22'
-    }
+    // Node/npm van en la imagen Docker de Jenkins (sin descarga automatica de plugins)
 
     environment {
         ANDROID_IMAGE = 'mingc/android-build-box:latest'
