@@ -16,7 +16,7 @@ docker run --rm \
   -e SONAR_TOKEN \
   -e SONAR_HOST_URL \
   "$IMAGE" \
-  /bin/bash -lc 'chmod +x gradlew && ./gradlew sonar \
+  /bin/bash -lc 'sed -i "s/\r$//" gradlew 2>/dev/null || true; chmod +x gradlew && ./gradlew sonar \
     -Dproject.settings=sonar-project.local.properties \
     -Dsonar.host.url=${SONAR_HOST_URL} \
     -Dsonar.token=${SONAR_TOKEN} \

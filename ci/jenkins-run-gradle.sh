@@ -19,4 +19,4 @@ docker run --rm \
   -w /project \
   -e GRADLE_USER_HOME=/project/.gradle-jenkins \
   "$IMAGE" \
-  /bin/bash -lc "chmod +x gradlew && ./gradlew $* --no-daemon -Dorg.gradle.jvmargs=-Xmx2560m"
+  /bin/bash -lc "sed -i 's/\r$//' gradlew 2>/dev/null || true; chmod +x gradlew && ./gradlew $* --no-daemon -Dorg.gradle.jvmargs=-Xmx2560m"
