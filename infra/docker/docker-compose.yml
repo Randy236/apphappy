@@ -54,13 +54,15 @@ services:
       - "50000:50000"
     volumes:
       - E:/happyjump-ci/data/jenkins_home:/var/jenkins_home
-      - ../../:/workspace/apphappy:ro
+      - ../../:/workspace/apphappy
       - E:/happyjump-ci/deploy-runtime:/var/jenkins_home/servers/happyjump
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
       DOCKER_HOST: unix:///var/run/docker.sock
       SONAR_HOST_URL: http://sonarqube:9000
       DOCKER_NETWORK: happyjump-ci_default
+      JENKINS_HOST_WORKSPACE_ROOT: E:/happyjump-ci/data/jenkins_home/workspace
+      DOCKER_REPO_PATH: D:/apphappy-full
       GRADLE_USER_HOME: /var/jenkins_home/.gradle
       NPM_CONFIG_CACHE: /var/jenkins_home/.npm
       JAVA_OPTS: "-Xmx1024m"
