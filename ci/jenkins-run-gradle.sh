@@ -1,46 +1,49 @@
 #!/usr/bin/env bash
-# Gradle en contenedor Android. Jenkins en Docker debe montar ruta del HOST (Windows).
+# Gradle en contenedor Android. Jenkins en Docker: montar ruta Windows visible por el daemon.
 set -euo pipefail
 
 SCRIPT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 IMAGE="${ANDROID_IMAGE:-mingc/android-build-box:latest}"
 
-# Jenkins exporta WORKSPACE=/var/jenkins_home/workspace/<job>
-# El daemon Docker (socket) no ve esa ruta: hay que usar el volumen en E: o D:
+# Comprueba gradlew en rutas visibles DENTRO del contenedor Jenkins (Linux)
+gradlew_ready() {
+  [[ -n "${WORKSPACE:-}" && -f "${WORKSPACE}/gradlew" ]] && return 0
+  [[ -f /workspace/apphappy/gradlew ]] && return 0
+  [[ -f "${SCRIPT_ROOT}/gradlew" ]] && return 0
+  return 1
+}
+
+# Ruta Windows para "docker run -v" (el daemon no ve /var/jenkins_home/...)
 resolve_mount_dir() {
-  if [[ -n "${DOCKER_MOUNT_DIR:-}" && -f "${DOCKER_MOUNT_DIR}/gradlew" ]]; then
-    echo "${DOCKER_MOUNT_DIR}"
+  if [[ -n "${DOCKER_MOUNT_DIR:-}" ]]; then
+    echo "${DOCKER_MOUNT_DIR//\\//}"
     return
   fi
   if [[ -n "${WORKSPACE:-}" && -f "${WORKSPACE}/gradlew" ]]; then
-    local job
+    local job host_root
     job="$(basename "${WORKSPACE}")"
-    local host_root="${JENKINS_HOST_WORKSPACE_ROOT:-E:/happyjump-ci/data/jenkins_home/workspace}"
-    host_root="${host_root//\\//}"
-    local host_ws="${host_root}/${job}"
-    if [[ -f "${host_ws}/gradlew" ]]; then
-      echo "${host_ws}"
-      return
-    fi
-  fi
-  if [[ -f /workspace/apphappy/gradlew ]]; then
-    echo "${DOCKER_REPO_PATH:-/workspace/apphappy}"
+    host_root="${JENKINS_HOST_WORKSPACE_ROOT:-E:/happyjump-ci/data/jenkins_home/workspace}"
+    echo "${host_root//\\//}/${job}"
     return
   fi
-  echo "${DOCKER_REPO_PATH:-$SCRIPT_ROOT}"
+  if [[ -f /workspace/apphappy/gradlew ]]; then
+    echo "${DOCKER_REPO_PATH:-D:/apphappy-full}"
+    return
+  fi
+  echo "${DOCKER_REPO_PATH:-D:/apphappy-full}"
 }
+
+if ! gradlew_ready; then
+  echo "No hay gradlew en WORKSPACE ni /workspace/apphappy" >&2
+  echo "WORKSPACE=${WORKSPACE:-<vacío>}" >&2
+  exit 1
+fi
 
 MOUNT_DIR="$(resolve_mount_dir)"
 MOUNT_DIR="${MOUNT_DIR//\\//}"
 
-if [[ ! -f "${MOUNT_DIR}/gradlew" ]]; then
-  echo "No existe gradlew en ${MOUNT_DIR}" >&2
-  echo "WORKSPACE=${WORKSPACE:-<vacío>}" >&2
-  ls -la "${MOUNT_DIR}" 2>/dev/null | head -15 >&2 || true
-  exit 1
-fi
-
 echo "=== Gradle Docker mount: ${MOUNT_DIR} ==="
+echo "=== WORKSPACE: ${WORKSPACE:-<vacío>} ==="
 
 docker pull "$IMAGE" >/dev/null 2>&1 || true
 

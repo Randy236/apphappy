@@ -8,24 +8,36 @@ NETWORK="${DOCKER_NETWORK:-happyjump-ci_default}"
 : "${SONAR_HOST_URL:?Falta SONAR_HOST_URL}"
 : "${SONAR_TOKEN:?Falta SONAR_TOKEN}"
 
+gradlew_ready() {
+  [[ -n "${WORKSPACE:-}" && -f "${WORKSPACE}/gradlew" ]] && return 0
+  [[ -f /workspace/apphappy/gradlew ]] && return 0
+  return 1
+}
+
 resolve_mount_dir() {
-  if [[ -n "${DOCKER_MOUNT_DIR:-}" && -f "${DOCKER_MOUNT_DIR}/gradlew" ]]; then
-    echo "${DOCKER_MOUNT_DIR}"
+  if [[ -n "${DOCKER_MOUNT_DIR:-}" ]]; then
+    echo "${DOCKER_MOUNT_DIR//\\//}"
     return
   fi
   if [[ -n "${WORKSPACE:-}" && -f "${WORKSPACE}/gradlew" ]]; then
-    local job
+    local job host_root
     job="$(basename "${WORKSPACE}")"
-    local host_root="${JENKINS_HOST_WORKSPACE_ROOT:-E:/happyjump-ci/data/jenkins_home/workspace}"
-    host_root="${host_root//\\//}"
-    echo "${host_root}/${job}"
+    host_root="${JENKINS_HOST_WORKSPACE_ROOT:-E:/happyjump-ci/data/jenkins_home/workspace}"
+    echo "${host_root//\\//}/${job}"
     return
   fi
-  echo "${DOCKER_REPO_PATH:-$SCRIPT_ROOT}"
+  echo "${DOCKER_REPO_PATH:-D:/apphappy-full}"
 }
+
+if ! gradlew_ready; then
+  echo "No hay gradlew para Sonar" >&2
+  exit 1
+fi
 
 MOUNT_DIR="$(resolve_mount_dir)"
 MOUNT_DIR="${MOUNT_DIR//\\//}"
+
+echo "=== Sonar Docker mount: ${MOUNT_DIR} ==="
 
 docker run --rm \
   --network "$NETWORK" \
