@@ -1,0 +1,38 @@
+ENTREGABLE 10 — App 100% + Desplegado + URL (Render GRATIS)
+==========================================================
+
+Render = servidor cloud gratis (API)
+db4free.net = MySQL gratis
+
+PASOS RÁPIDOS
+-------------
+
+1) MySQL: https://www.db4free.net/signup.php
+   → anota host, usuario, contraseña, nombre BD
+
+2) Render: https://dashboard.render.com
+   → New + → Blueprint → repo apphappy
+   → (usa render.yaml del proyecto)
+
+3) Variables en Render → Environment:
+   NODE_ENV=production
+   JWT_SECRET=HappyJumpRender2026SecretoLargo
+   DB_HOST=db4free.net
+   DB_USER=...
+   DB_PASSWORD=...
+   DB_NAME=...
+   DB_SSL=false
+
+4) Copia tu URL:
+   https://TU-APP.onrender.com/health
+   https://TU-APP.onrender.com/swagger-ui/
+
+5) Android — local.properties:
+   happyJump.api.baseUrl=https://TU-APP.onrender.com/
+
+6) Rebuild app → probar login Admin/1234
+
+Guía detallada: docs\GUIA_DEPLOY_RENDER.md
+Script ayuda:     .\scripts\deploy-render.ps1
+
+NOTA: Plan Free "duerme" sin tráfico; 1ra petición ~60s.

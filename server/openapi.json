@@ -11,7 +11,8 @@
     { "name": "Autenticación", "description": "Login, logout y PIN" },
     { "name": "Reservas Cancha", "description": "CRUD y operaciones de cancha deportiva" },
     { "name": "Reservas Salones", "description": "Reservas de salones para eventos" },
-    { "name": "Reportes", "description": "Solo administrador" }
+    { "name": "Reportes", "description": "Solo administrador" },
+    { "name": "Auditoría", "description": "Trazabilidad de cambios en la base de datos (solo admin)" }
   ],
   "components": {
     "securitySchemes": {
@@ -178,6 +179,21 @@
         }
       }
     },
+    "/usuarios/{id}": {
+      "delete": {
+        "tags": ["Autenticación"],
+        "summary": "Eliminado lógico de usuario (solo admin)",
+        "description": "Marca `deleted_at`; no borra la fila físicamente.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Usuario eliminado lógicamente" },
+          "404": { "description": "No encontrado" }
+        }
+      }
+    },
     "/usuarios/{id}/pin": {
       "put": {
         "tags": ["Autenticación"],
@@ -244,6 +260,20 @@
         "responses": { "200": { "description": "Reserva actualizada" } }
       }
     },
+    "/reservas-cancha/{id}": {
+      "delete": {
+        "tags": ["Reservas Cancha"],
+        "summary": "Eliminado lógico de reserva de cancha (solo admin)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Eliminado lógico OK" },
+          "404": { "description": "No encontrada" }
+        }
+      }
+    },
     "/reservas-cancha/{id}/cancelar": {
       "put": {
         "tags": ["Reservas Cancha"],
@@ -303,6 +333,20 @@
         "responses": { "200": { "description": "Reserva actualizada" } }
       }
     },
+    "/reservas-salones/{id}": {
+      "delete": {
+        "tags": ["Reservas Salones"],
+        "summary": "Eliminado lógico de reserva de salón (solo admin)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Eliminado lógico OK" },
+          "404": { "description": "No encontrada" }
+        }
+      }
+    },
     "/reservas-salones/{id}/cancelar": {
       "put": {
         "tags": ["Reservas Salones"],
@@ -351,6 +395,29 @@
           { "name": "fecha", "in": "query", "schema": { "type": "string", "format": "date" } }
         ],
         "responses": { "200": { "description": "Cancelaciones en el periodo" } }
+      }
+    },
+    "/auditoria": {
+      "get": {
+        "tags": ["Auditoría"],
+        "summary": "Consultar tabla de auditoría (solo admin)",
+        "description": "Lista quién hizo qué cambio (crear, editar, eliminar, login, etc.) con fecha, tabla y detalle JSON.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "tabla", "in": "query", "schema": { "type": "string", "example": "reservas_cancha" } },
+          {
+            "name": "accion",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["CREAR", "ACTUALIZAR", "ELIMINAR", "CANCELAR", "COBRAR_SALDO", "CAMBIAR_PIN", "LOGIN", "LOGOUT"]
+            }
+          },
+          { "name": "desde", "in": "query", "schema": { "type": "string", "format": "date" } },
+          { "name": "hasta", "in": "query", "schema": { "type": "string", "format": "date" } },
+          { "name": "limite", "in": "query", "schema": { "type": "integer", "default": 100, "maximum": 500 } }
+        ],
+        "responses": { "200": { "description": "Filas de la tabla auditoria" } }
       }
     }
   }

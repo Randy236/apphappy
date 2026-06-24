@@ -5,7 +5,8 @@
 
 USE happy_jump;
 
-DELETE FROM reservas_cancha;
-DELETE FROM reservas_salones;
+-- Eliminado lógico (no DELETE físico)
+UPDATE reservas_cancha SET deleted_at = NOW() WHERE deleted_at IS NULL;
+UPDATE reservas_salones SET deleted_at = NOW() WHERE deleted_at IS NULL;
 
 UPDATE usuarios SET active_token = NULL;
