@@ -22,7 +22,8 @@ allure {
     version.set("2.29.0")
     adapter {
         autoconfigure.set(true)
-        aspectjWeaver.set(true)
+        // AspectJ en CI provoca cierres del JVM del test runner; Allure sigue con autoconfigure.
+        aspectjWeaver.set(System.getenv("CI") != "true")
         frameworks {
             junit4 {
                 enabled.set(true)

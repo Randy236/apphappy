@@ -162,17 +162,22 @@ fun franjasCanchaEntre(
  * Sugerencia de inicio/fin (1 h) al abrir «Otra hora»: hoy = un par de minutos después de ahora
  * (para turnos de última hora, ej. 12:15 si son las 12:11).
  */
-fun sugerenciaInicioFinCancha(fecha: LocalDate): Pair<String, String> {
-    val hoy = LocalDate.now()
+fun sugerenciaInicioFinCancha(fecha: LocalDate): Pair<String, String> =
+    sugerenciaInicioFinCanchaInterna(fecha, LocalDate.now(), LocalTime.now())
+
+internal fun sugerenciaInicioFinCanchaInterna(
+    fecha: LocalDate,
+    hoy: LocalDate,
+    ahora: LocalTime,
+): Pair<String, String> {
     if (fecha.isBefore(hoy)) return "09:00" to "10:00"
     val minInicio: Int = if (fecha.isEqual(hoy)) {
-        val now = LocalTime.now()
-        val nm = now.hour * 60 + now.minute + 2
+        val nm = ahora.hour * 60 + ahora.minute + 2
         maxOf(8 * 60, nm)
     } else {
         9 * 60
     }
-    val s = minInicio.coerceIn(8 * 60, 21 * 60)
+    val s = minInicio.coerceIn(8 * 60, 21 * 60 + 30)
     val e = s + 60
     return if (e > 22 * 60) {
         val s2 = 21 * 60
@@ -198,14 +203,20 @@ fun mensajeRangoCanchaInvalido(horaInicio: String, horaFin: String, fecha: Local
  * No usar para cada tramo atómico: un turno 11:00–12:30 tiene tramos intermedios que
  * «ya pasaron» a mediodía sin invalidar la reserva.
  */
-fun inicioTurnoCanchaEsPasado(fecha: LocalDate, horaInicioCampo: String): Boolean {
-    val hoy = LocalDate.now()
+fun inicioTurnoCanchaEsPasado(fecha: LocalDate, horaInicioCampo: String): Boolean =
+    inicioTurnoCanchaEsPasadoInterna(fecha, LocalDate.now(), LocalTime.now(), horaInicioCampo)
+
+internal fun inicioTurnoCanchaEsPasadoInterna(
+    fecha: LocalDate,
+    hoy: LocalDate,
+    ahora: LocalTime,
+    horaInicioCampo: String,
+): Boolean {
     if (fecha.isBefore(hoy)) return true
     if (!fecha.isEqual(hoy)) return false
     val ini = horaTextoASql(horaInicioCampo.trim()) ?: return true
     val iniMin = minutosDelDia(ini) ?: return true
-    val now = LocalTime.now()
-    val ahoraMin = now.hour * 60 + now.minute
+    val ahoraMin = ahora.hour * 60 + ahora.minute
     return iniMin < ahoraMin
 }
 

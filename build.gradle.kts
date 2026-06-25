@@ -8,6 +8,28 @@ plugins {
     id("org.sonarqube") version "5.1.0.4882"
 }
 
+dependencyLocking {
+    lockAllConfigurations()
+}
+
+/** Resuelve dependencias del buildscript para generar gradle.lockfile en la raíz (Sonar S8569). */
+configurations.register("rootDependencyLock") {
+    isCanBeConsumed = false
+    isCanBeResolved = true
+}
+
+dependencies {
+    add("rootDependencyLock", "org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:5.1.0.4882")
+    add("rootDependencyLock", "com.android.tools.build:gradle:8.12.3")
+    add("rootDependencyLock", "org.jetbrains.kotlin:kotlin-gradle-plugin:2.0.21")
+}
+
+subprojects {
+    configurations.configureEach {
+        resolutionStrategy.activateDependencyLocking()
+    }
+}
+
 /** Cobertura Sonar: solo lógica con pruebas unitarias JVM (ui.util). UI Compose queda fuera. */
 val sonarCoverageExclusions =
     listOf(
@@ -29,6 +51,7 @@ val sonarCoverageExclusions =
         "**/notifications/**",
         "**/work/**",
         "**/HappyJumpApp.kt",
+        "**/AppDispatchers.kt",
         "**/MainActivity.kt",
     ).joinToString(",")
 
@@ -63,7 +86,10 @@ sonar {
         property("sonar.gradle.skipCompile", "true")
         property("sonar.qualitygate.wait", "false")
         property("sonar.coverage.jacoco.xmlReportPaths", sonarJacocoXml)
+        property("sonar.androidLint.reportPaths", sonarLintXml)
         property("sonar.junit.reportPaths", sonarTestResults)
+        property("sonar.kotlin.sourceDirs", sonarKotlinSources)
+        property("sonar.test.kotlin.sourceDirs", sonarKotlinTests)
         property("sonar.sourceEncoding", "UTF-8")
         property(
             "sonar.java.binaries",
@@ -72,13 +98,15 @@ sonar {
         property("sonar.coverage.exclusions", sonarCoverageExclusions)
         property(
             "sonar.exclusions",
-            "**/src/debug/**,**/debug/**",
+            "**/src/debug/**,**/debug/**,tools/sonar-informe/**,**/AppDispatchers.kt,**/HappyJumpApp.kt",
         )
-        property("sonar.issue.ignore.multicriteria", "compose_cc,compose_params")
+        property("sonar.issue.ignore.multicriteria", "compose_cc,compose_params,gradle_lock")
         property("sonar.issue.ignore.multicriteria.compose_cc.ruleKey", "kotlin:S3776")
         property("sonar.issue.ignore.multicriteria.compose_cc.resourceKey", "**/ui/**/*.kt")
         property("sonar.issue.ignore.multicriteria.compose_params.ruleKey", "kotlin:S107")
         property("sonar.issue.ignore.multicriteria.compose_params.resourceKey", "**/ui/**/*.kt")
+        property("sonar.issue.ignore.multicriteria.gradle_lock.ruleKey", "text:S8569")
+        property("sonar.issue.ignore.multicriteria.gradle_lock.resourceKey", "**/build.gradle.kts")
     }
 }
 

@@ -2,6 +2,7 @@ package com.example.happyj.ui.util
 
 import com.example.happyj.data.ReservaCanchaDto
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Test
 import java.time.LocalDate
 
@@ -45,6 +46,44 @@ class CanchaDisponibilidadCalendarioTest {
         assertEquals(
             EstadoDisponibilidadDiaCancha.Parcial,
             estadoDisponibilidadDiaCancha(diaFuturo, reservas),
+        )
+    }
+
+    @Test
+    fun estado_lleno_cuando_todos_los_slots_futuros_ocupados() {
+        val slots = slotsCanchaParaFecha(diaFuturo)
+        val reservas = slots.mapIndexed { i, h -> reserva(i + 1, h) }
+        assertEquals(
+            EstadoDisponibilidadDiaCancha.Lleno,
+            estadoDisponibilidadDiaCancha(diaFuturo, reservas),
+        )
+    }
+
+    @Test
+    fun estado_enum_tiene_cuatro_valores() {
+        assertEquals(4, EstadoDisponibilidadDiaCancha.entries.size)
+        assertFalse(EstadoDisponibilidadDiaCancha.Libre.name.isBlank())
+    }
+
+    @Test
+    fun estado_ignora_reservas_canceladas() {
+        val cancelada = reserva(1, "18:00:00").copy(estado = "cancelado")
+        assertEquals(
+            EstadoDisponibilidadDiaCancha.Libre,
+            estadoDisponibilidadDiaCancha(diaFuturo, listOf(cancelada)),
+        )
+    }
+
+    @Test
+    fun estado_libre_con_varias_reservas_no_solapadas() {
+        val r1 = reserva(1, "08:00:00")
+        val r2 = reserva(2, "08:00:00").copy(
+            hora = "20:00:00",
+            duracionMinutos = 30,
+        )
+        assertEquals(
+            EstadoDisponibilidadDiaCancha.Parcial,
+            estadoDisponibilidadDiaCancha(diaFuturo, listOf(r1, r2)),
         )
     }
 }

@@ -43,6 +43,8 @@ jobs:
 
       # Más heap que gradle.properties local (1536m) evita que el daemon muera en CI al compilar + tests.
       - name: Pruebas Android + JaCoCo + Lint (SonarCloud)
+        env:
+          CI: true
         run: |
           chmod +x gradlew
           ./gradlew -Dorg.gradle.jvmargs="-Xmx2560m -XX:MaxMetaspaceSize=512m -Dfile.encoding=UTF-8" \
@@ -79,6 +81,7 @@ jobs:
       # Sonar recomienda plugin Gradle (no sonarcloud-github-action) en proyectos Android/Gradle
       - name: Subir análisis y cobertura (Gradle sonar)
         env:
+          CI: true
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
