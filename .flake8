@@ -1,0 +1,5 @@
+[flake8]
+max-line-length = 120
+extend-ignore = E501, W503, E128, E231, E402
+exclude = .git,__pycache__,.gradle,build,node_modules,deploy-runtime,dist
+max-complexity = 20

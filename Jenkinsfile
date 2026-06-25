@@ -9,8 +9,8 @@ pipeline {
     parameters {
         choice(
             name: 'PIPELINE_MODE',
-            choices: ['rapido', 'completo'],
-            description: 'rapido = tests API (recomendado). completo = + Android, Sonar, build APK, deploy.'
+            choices: ['completo', 'rapido'],
+            description: 'completo = Android + Sonar + build + deploy. rapido = solo tests API.'
         )
     }
 
@@ -41,6 +41,15 @@ pipeline {
                 dir('server') {
                     sh 'npm ci --ignore-scripts 2>/dev/null || npm install'
                 }
+            }
+        }
+
+        stage('Lint Python (flake8)') {
+            steps {
+                sh '''
+                  docker run --rm -v "${WORKSPACE}:/project" -w /project python:3.12-slim \
+                    bash -lc "pip install -q -r scripts/requirements-lint.txt && python -m flake8 scripts"
+                '''
             }
         }
 
