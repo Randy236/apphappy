@@ -17,6 +17,7 @@ import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,6 +29,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.happyj.ui.theme.HappyGreen
+import com.example.happyj.ui.theme.HappyGreenLight
+import com.example.happyj.ui.theme.HappyTextPrimary
+import com.example.happyj.ui.theme.HappyTextSecondary
 
 /**
  * Flechas grandes + texto claro para cambiar de semana (cancha, salones, etc.).
@@ -45,8 +49,8 @@ fun NavegacionSemanaBar(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp),
-            shape = RoundedCornerShape(18.dp),
-            color = Color(0xFFE8F5E9),
+            shape = RoundedCornerShape(20.dp),
+            color = HappyGreenLight.copy(alpha = 0.55f),
             shadowElevation = 0.dp,
         ) {
             Row(
@@ -64,7 +68,7 @@ fun NavegacionSemanaBar(
                     shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.filledTonalButtonColors(
                         containerColor = Color.White,
-                        contentColor = Color(0xFF1A1A2E),
+                        contentColor = HappyTextPrimary,
                     ),
                     contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
                     elevation = ButtonDefaults.filledTonalButtonElevation(
@@ -82,16 +86,14 @@ fun NavegacionSemanaBar(
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             "Semana",
-                            fontSize = 12.sp,
-                            color = Color(0xFF607D8B),
-                            lineHeight = 14.sp,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = HappyTextSecondary,
                         )
                         Text(
                             "anterior",
-                            fontSize = 15.sp,
+                            style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF1A1A2E),
-                            lineHeight = 18.sp,
+                            color = HappyTextPrimary,
                         )
                     }
                 }
@@ -103,7 +105,7 @@ fun NavegacionSemanaBar(
                     shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.filledTonalButtonColors(
                         containerColor = Color.White,
-                        contentColor = Color(0xFF1A1A2E),
+                        contentColor = HappyTextPrimary,
                     ),
                     contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
                     elevation = ButtonDefaults.filledTonalButtonElevation(
@@ -117,16 +119,14 @@ fun NavegacionSemanaBar(
                     ) {
                         Text(
                             "Semana",
-                            fontSize = 12.sp,
-                            color = Color(0xFF607D8B),
-                            lineHeight = 14.sp,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = HappyTextSecondary,
                         )
                         Text(
                             "siguiente",
-                            fontSize = 15.sp,
+                            style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF1A1A2E),
-                            lineHeight = 18.sp,
+                            color = HappyTextPrimary,
                         )
                     }
                     Spacer(Modifier.width(6.dp))
@@ -145,9 +145,8 @@ fun NavegacionSemanaBar(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
-                fontSize = 12.sp,
-                lineHeight = 16.sp,
-                color = Color(0xFF607D8B),
+                style = MaterialTheme.typography.bodySmall,
+                color = HappyTextSecondary,
                 textAlign = TextAlign.Center,
             )
         }

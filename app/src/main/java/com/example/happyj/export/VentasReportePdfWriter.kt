@@ -198,7 +198,7 @@ object VentasReportePdfWriter {
         }
 
         fun append(text: String, paint: TextPaint) {
-            val c = canvas ?: return
+            if (canvas == null) return
             val width = (PAGE_W - 2 * MARGIN).toInt().coerceAtLeast(80)
             val layout = StaticLayout.Builder.obtain(text, 0, text.length, paint, width)
                 .setAlignment(Layout.Alignment.ALIGN_NORMAL)

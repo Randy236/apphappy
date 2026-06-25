@@ -79,13 +79,16 @@ import com.example.happyj.ui.components.FullscreenFormDialogScaffold
 import com.example.happyj.ui.components.HappyToggleOption
 import com.example.happyj.ui.components.NavegacionSemanaBar
 import com.example.happyj.ui.theme.AdelantoAmarillo
+import com.example.happyj.ui.theme.AdelantoAmarilloBg
 import com.example.happyj.ui.theme.DisponibleGreen
+import com.example.happyj.ui.theme.DisponibleGreenBg
 import com.example.happyj.ui.theme.HappyBgBottom
 import com.example.happyj.ui.theme.HappyBgMiddle
 import com.example.happyj.ui.theme.HappyBgTop
 import com.example.happyj.ui.theme.HappyGreen
 import com.example.happyj.ui.theme.HappyTextSecondary
 import com.example.happyj.ui.theme.OcupadoRojo
+import com.example.happyj.ui.theme.OcupadoRojoBg
 import com.example.happyj.ui.util.EstadoDisponibilidadDiaCancha
 import com.example.happyj.ui.util.GrupoTurnoCancha
 import com.example.happyj.ui.util.agruparReservasCanchaContiguas
@@ -234,10 +237,10 @@ private fun coloresLeyendaCeldaCalendarioCancha(
     if (cargando && st == null) return Color(0xFFEEEEEE) to Color(0xFF9E9E9E)
     if (st == null) return Color(0xFFEEEEEE) to Color(0xFF757575)
     return when (st) {
-        EstadoDisponibilidadDiaCancha.Libre -> Color(0xFFC8E6C9) to Color(0xFF1B5E20)
-        EstadoDisponibilidadDiaCancha.Parcial -> Color(0xFFFFF9C4) to Color(0xFFF57F17)
-        EstadoDisponibilidadDiaCancha.Lleno -> Color(0xFFFFCDD2) to Color(0xFFB71C1C)
-        EstadoDisponibilidadDiaCancha.Pasado -> Color(0xFFECEFF1) to Color(0xFF78909C)
+        EstadoDisponibilidadDiaCancha.Libre -> DisponibleGreenBg to DisponibleGreen
+        EstadoDisponibilidadDiaCancha.Parcial -> AdelantoAmarilloBg to AdelantoAmarillo
+        EstadoDisponibilidadDiaCancha.Lleno -> OcupadoRojoBg to OcupadoRojo
+        EstadoDisponibilidadDiaCancha.Pasado -> Color(0xFFF1F5F9) to Color(0xFF94A3B8)
     }
 }
 

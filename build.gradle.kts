@@ -28,6 +28,9 @@ subprojects {
     configurations.configureEach {
         resolutionStrategy.activateDependencyLocking()
     }
+    tasks.withType<JavaCompile>().configureEach {
+        options.encoding = "UTF-8"
+    }
 }
 
 /** Cobertura Sonar: solo lógica con pruebas unitarias JVM (ui.util). UI Compose queda fuera. */
@@ -98,7 +101,7 @@ sonar {
         property("sonar.coverage.exclusions", sonarCoverageExclusions)
         property(
             "sonar.exclusions",
-            "**/src/debug/**,**/debug/**,tools/sonar-informe/**,**/AppDispatchers.kt,**/HappyJumpApp.kt",
+            "**/src/debug/**,**/debug/**,tools/sonar-informe/**,**/AppDispatchers.kt,**/HappyJumpApp.kt,**/*.lockfile,**/settings-gradle.lockfile",
         )
         property("sonar.issue.ignore.multicriteria", "compose_cc,compose_params,gradle_lock")
         property("sonar.issue.ignore.multicriteria.compose_cc.ruleKey", "kotlin:S3776")

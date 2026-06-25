@@ -1,7 +1,6 @@
 package com.example.happyj.ui.login
 
 import androidx.compose.animation.Crossfade
-import androidx.compose.foundation.background
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -44,7 +43,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -56,11 +54,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.happyj.R
-import com.example.happyj.ui.theme.HappyBgBottom
-import com.example.happyj.ui.theme.HappyBgMiddle
-import com.example.happyj.ui.theme.HappyBgTop
-import com.example.happyj.ui.theme.HappyGreen
 import com.example.happyj.ui.components.BannerMensajeImportante
+import com.example.happyj.ui.components.HappyScreenBackground
+import com.example.happyj.ui.theme.HappyGreen
+import com.example.happyj.ui.theme.HappyGreenDark
+import com.example.happyj.ui.theme.HappyTextPrimary
 import com.example.happyj.ui.theme.HappyTextSecondary
 import com.example.happyj.viewmodel.AuthViewModel
 import kotlinx.coroutines.delay
@@ -96,67 +94,90 @@ fun LoginScreen(viewModel: AuthViewModel) {
         unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.45f),
     )
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Brush.verticalGradient(listOf(HappyBgTop, HappyBgMiddle, HappyBgBottom)))
-            .padding(horizontal = 24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Spacer(modifier = Modifier.height(40.dp))
-        LoginMarcaYCabecera()
-        Spacer(modifier = Modifier.height(22.dp))
-        LoginFilaProgresoPasos(paso)
-        LoginTextoAyudaPaso(paso)
-        Spacer(modifier = Modifier.height(20.dp))
+    HappyScreenBackground {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Spacer(modifier = Modifier.height(36.dp))
+            LoginMarcaYCabecera()
+            Spacer(modifier = Modifier.height(24.dp))
 
-        Crossfade(targetState = paso, label = "loginPaso") { p ->
-            when (p) {
-                PasoLogin.Nombre -> LoginPasoNombre(
-                    nombre = nombre,
-                    fieldShape = fieldShape,
-                    fieldColors = fieldColors,
-                    onNombreChange = {
-                        nombre = it
-                        viewModel.clearLoginError()
-                    },
-                    onContinuar = {
-                        if (nombre.isNotBlank()) {
-                            pin = ""
-                            viewModel.clearLoginError()
-                            paso = PasoLogin.Pin
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp),
+                color = Color.White.copy(alpha = 0.95f),
+                shadowElevation = 6.dp,
+            ) {
+                Column(
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    LoginFilaProgresoPasos(paso)
+                    LoginTextoAyudaPaso(paso)
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    Crossfade(targetState = paso, label = "loginPaso") { p ->
+                        when (p) {
+                            PasoLogin.Nombre -> LoginPasoNombre(
+                                nombre = nombre,
+                                fieldShape = fieldShape,
+                                fieldColors = fieldColors,
+                                onNombreChange = {
+                                    nombre = it
+                                    viewModel.clearLoginError()
+                                },
+                                onContinuar = {
+                                    if (nombre.isNotBlank()) {
+                                        pin = ""
+                                        viewModel.clearLoginError()
+                                        paso = PasoLogin.Pin
+                                    }
+                                },
+                            )
+                            PasoLogin.Pin -> LoginPasoPin(
+                                nombre = nombre,
+                                pin = pin,
+                                fieldShape = fieldShape,
+                                fieldColors = fieldColors,
+                                pinFocus = pinFocus,
+                                onPinChange = { v ->
+                                    viewModel.clearLoginError()
+                                    pin = v.filter { it.isDigit() }.take(5)
+                                },
+                                onVolverNombre = {
+                                    paso = PasoLogin.Nombre
+                                    viewModel.clearLoginError()
+                                },
+                                onEntrar = {
+                                    viewModel.clearLoginError()
+                                    viewModel.login(nombre, pin)
+                                },
+                            )
                         }
-                    },
-                )
-                PasoLogin.Pin -> LoginPasoPin(
-                    nombre = nombre,
-                    pin = pin,
-                    fieldShape = fieldShape,
-                    fieldColors = fieldColors,
-                    pinFocus = pinFocus,
-                    onPinChange = { v ->
-                        viewModel.clearLoginError()
-                        pin = v.filter { it.isDigit() }.take(8)
-                    },
-                    onVolverNombre = {
-                        paso = PasoLogin.Nombre
-                        viewModel.clearLoginError()
-                    },
-                    onEntrar = {
-                        viewModel.clearLoginError()
-                        viewModel.login(nombre, pin)
-                    },
-                )
-            }
-        }
+                    }
 
-        if (loginError != null) {
-            BannerMensajeImportante(
-                titulo = "No se pudo entrar",
-                mensaje = loginError!!,
-                modifier = Modifier
-                    .padding(top = 14.dp)
-                    .fillMaxWidth(),
+                    if (loginError != null) {
+                        BannerMensajeImportante(
+                            titulo = "No se pudo entrar",
+                            mensaje = loginError!!,
+                            modifier = Modifier
+                                .padding(top = 14.dp)
+                                .fillMaxWidth(),
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+            Text(
+                "¿Problemas para entrar? Pide ayuda a tu administrador.",
+                fontSize = 12.sp,
+                color = HappyTextSecondary,
+                textAlign = TextAlign.Center,
+                lineHeight = 16.sp,
             )
         }
     }
@@ -180,10 +201,10 @@ private fun LoginMarcaYCabecera() {
         color = MaterialTheme.colorScheme.onBackground,
     )
     Text(
-        text = "Inicia sesión con tu usuario",
-        fontSize = 15.sp,
+        text = "Reserva cancha y salones fácilmente",
+        style = MaterialTheme.typography.bodyLarge,
         color = HappyTextSecondary,
-        modifier = Modifier.padding(top = 4.dp),
+        modifier = Modifier.padding(top = 6.dp),
         textAlign = TextAlign.Center,
     )
 }
@@ -302,14 +323,14 @@ private fun LoginPasoPin(
                 Icon(
                     Icons.AutoMirrored.Outlined.ArrowBack,
                     contentDescription = "Volver",
-                    tint = Color(0xFF1A1A2E),
+                    tint = HappyTextPrimary,
                 )
             }
             Text(
                 "Confirma tu PIN",
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 17.sp,
-                color = Color(0xFF1A1A2E),
+                color = HappyTextPrimary,
                 modifier = Modifier.weight(1f),
             )
         }
@@ -347,7 +368,7 @@ private fun LoginPasoPin(
         Spacer(Modifier.height(20.dp))
         Button(
             onClick = onEntrar,
-            enabled = pin.length >= 4,
+            enabled = pin.length in 4..5,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(52.dp),
@@ -389,11 +410,11 @@ private fun LoginTarjetaResumenUsuario(nombre: String, onCambiarUsuario: () -> U
                     nombre.trim().ifBlank { "—" },
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF1A1A2E),
+                    color = HappyTextPrimary,
                 )
             }
             TextButton(onClick = onCambiarUsuario) {
-                Text("Cambiar", color = HappyGreen, fontWeight = FontWeight.SemiBold)
+                Text("Cambiar", color = HappyGreenDark, fontWeight = FontWeight.SemiBold)
             }
         }
     }

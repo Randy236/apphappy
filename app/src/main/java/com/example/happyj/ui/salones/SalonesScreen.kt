@@ -664,14 +664,14 @@ private fun SlotSalonCard(
         finalizado && saldoPendiente -> "Finalizado (saldo pendiente)"
         finalizado -> "Finalizado"
         libre -> "Disponible"
-        conAdelanto -> "Adelanto (${porcentajeAdelanto(reserva!!)}%)"
+        conAdelanto -> "Adelanto (${porcentajeAdelanto(reserva)}%)"
         else -> "Ocupado"
     }
     val subtitulo = when {
         libre && soloConsulta -> "Disponible"
         libre -> "Libre para reservar"
-        conAdelanto -> tituloEventoReserva(reserva!!)
-        else -> tituloEventoReserva(reserva!!)
+        conAdelanto -> tituloEventoReserva(reserva)
+        else -> tituloEventoReserva(reserva)
     }
 
     Card(

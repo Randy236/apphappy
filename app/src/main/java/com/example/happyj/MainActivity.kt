@@ -26,7 +26,10 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             HappyjTheme {
-                Surface(modifier = Modifier.fillMaxSize()) {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = androidx.compose.ui.graphics.Color.Transparent,
+                ) {
                     val notifPerm = rememberLauncherForActivityResult(
                         ActivityResultContracts.RequestPermission(),
                     ) { _ -> }

@@ -6,7 +6,7 @@ import java.time.LocalTime
 
 /** Estado de la grilla rápida de la cancha para un día (solo tramos aún reservables cuentan). */
 enum class EstadoDisponibilidadDiaCancha {
-    /** Todo el día ya pasó: sin tramos futuros en la grilla. */
+    /** El día ya pasó por completo: sin tramos futuros en la grilla. */
     Pasado,
 
     /** Hay al menos un slot libre y ninguno ocupado en tramos futuros. */

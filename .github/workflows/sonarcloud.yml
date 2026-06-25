@@ -16,6 +16,9 @@ on:
 jobs:
   sonar:
     runs-on: ubuntu-latest
+    env:
+      LANG: en_US.UTF-8
+      LC_ALL: en_US.UTF-8
     steps:
       - uses: actions/checkout@v4
         with:
@@ -87,6 +90,7 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew sonar --no-daemon --info \
+            -Dorg.gradle.jvmargs="-Xmx2560m -XX:MaxMetaspaceSize=512m -Dfile.encoding=UTF-8" \
             -Dsonar.host.url=https://sonarcloud.io \
             -Dsonar.projectKey=Randy236_apphappy \
             -Dsonar.organization=randy236 \

@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -20,7 +21,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.example.happyj.ui.theme.AdelantoAmarillo
+import com.example.happyj.ui.theme.AdelantoAmarilloBg
+import com.example.happyj.ui.theme.HappyTextPrimary
 
 /**
  * Aviso visible y legible (icono + fondo suave), pensado para personas
@@ -35,8 +38,8 @@ fun BannerMensajeImportante(
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        color = Color(0xFFFFF3E0),
+        shape = RoundedCornerShape(14.dp),
+        color = AdelantoAmarilloBg,
         shadowElevation = 0.dp,
     ) {
         Row(
@@ -46,7 +49,7 @@ fun BannerMensajeImportante(
             Icon(
                 Icons.Outlined.ErrorOutline,
                 contentDescription = null,
-                tint = Color(0xFFE65100),
+                tint = AdelantoAmarillo,
                 modifier = Modifier.size(24.dp),
             )
             Spacer(Modifier.width(10.dp))
@@ -54,17 +57,17 @@ fun BannerMensajeImportante(
                 if (!titulo.isNullOrBlank()) {
                     Text(
                         titulo,
-                        fontSize = 14.sp,
+                        style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF3E2723),
+                        color = HappyTextPrimary,
                     )
                     Spacer(Modifier.height(4.dp))
                 }
                 Text(
                     mensaje,
-                    fontSize = 14.sp,
-                    color = Color(0xFF4E342E),
-                    lineHeight = 20.sp,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color(0xFF78350F),
+                    lineHeight = MaterialTheme.typography.bodyMedium.lineHeight,
                 )
             }
         }
