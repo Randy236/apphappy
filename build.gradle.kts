@@ -167,9 +167,7 @@ tasks.register("verifySonarPrerequisites") {
     }
 }
 
-project(":tools:sonar-informe") {
-    extensions.extraProperties.set("sonar.skip", "true")
-}
+findProject(":tools:sonar-informe")?.extensions?.extraProperties?.set("sonar.skip", "true")
 
 tasks.named("sonar") {
     dependsOn("verifySonarPrerequisites")
