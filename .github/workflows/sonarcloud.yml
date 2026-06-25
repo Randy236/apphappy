@@ -42,13 +42,19 @@ jobs:
         run: npm ci --ignore-scripts && npm run test:ci && npm run coverage:verify
 
       # Más heap que gradle.properties local (1536m) evita que el daemon muera en CI al compilar + tests.
-      - name: Pruebas unitarias Android + informe JaCoCo
-        run: chmod +x gradlew && ./gradlew -Dorg.gradle.jvmargs="-Xmx2560m -XX:MaxMetaspaceSize=512m -Dfile.encoding=UTF-8" :app:testDebugUnitTest :app:jacocoTestReport :app:printJacocoTotals --no-daemon
+      - name: Pruebas Android + JaCoCo + Lint (SonarCloud)
+        run: |
+          chmod +x gradlew
+          ./gradlew -Dorg.gradle.jvmargs="-Xmx2560m -XX:MaxMetaspaceSize=512m -Dfile.encoding=UTF-8" \
+            :app:testDebugUnitTest :app:jacocoTestReport :app:lintDebug :app:printJacocoTotals \
+            --no-daemon
 
-      - name: Verificar JaCoCo (sin esto Sonar muestra "Coverage No data")
+      - name: Verificar informes Sonar (JaCoCo + Lint)
         run: |
           test -f app/build/reports/jacoco/jacocoTestReport/jacocoTestReport.xml
           echo "JaCoCo XML: $(wc -c < app/build/reports/jacoco/jacocoTestReport/jacocoTestReport.xml) bytes"
+          test -f app/build/reports/lint-results-debug.xml
+          echo "Lint XML: $(wc -c < app/build/reports/lint-results-debug.xml) bytes"
           test -d app/build/tmp/kotlin-classes/debug && echo "kotlin-classes OK" || echo "WARN kotlin-classes"
 
       - name: Comprobar SONAR_TOKEN

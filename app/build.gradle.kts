@@ -10,11 +10,25 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.allure)
     jacoco
 }
 
 jacoco {
     toolVersion = "0.8.12"
+}
+
+allure {
+    version.set("2.29.0")
+    adapter {
+        autoconfigure.set(true)
+        aspectjWeaver.set(true)
+        frameworks {
+            junit4 {
+                enabled.set(true)
+            }
+        }
+    }
 }
 
 /** JaCoCo XML declara DTD externo; sin esto falla al buscar report.dtd junto al XML. */
@@ -56,7 +70,8 @@ android {
             enableUnitTestCoverage = true
         }
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -74,6 +89,10 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+    lint {
+        abortOnError = false
+        checkReleaseBuilds = false
     }
 }
 
@@ -98,6 +117,7 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation("androidx.compose.material:material-icons-extended")
     testImplementation(libs.junit)
+    testImplementation(libs.allure.junit4)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
@@ -215,8 +235,18 @@ tasks.register("printJacocoTotals") {
         lineInstr("LINE (lo más parecido a % de líneas en Python)", "LINE")
         lineInstr("INSTRUCTION (detalle a nivel bytecode)", "INSTRUCTION")
         println()
+        val pkgs = report.getElementsByTagName("package")
+        for (i in 0 until pkgs.length) {
+            val pkg = pkgs.item(i) as Element
+            if (!pkg.getAttribute("name").contains("ui/util")) continue
+            val p = counterOn(pkg, "LINE") ?: continue
+            val pct = pct(p.first, p.second)
+            println("Paquete ui.util (alcance SonarCloud): ${"%.2f".format(pct)}%  (covered=${p.first}, missed=${p.second})")
+            break
+        }
+        println()
         println("Incluye Kotlin/Java en src/main compilados en debug, excl. R/BuildConfig/tests.")
-        println("Pantallas Compose sin pruebas que las ejecuten cuentan como líneas missed → baja el %.")
+        println("Sonar excluye pantallas Compose; el % del dashboard refleja sobre todo ui.util.")
     }
 }
 
