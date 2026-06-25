@@ -16,7 +16,7 @@ jobs:
   snyk-gradle:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: actions/setup-java@v4
         with:
@@ -25,9 +25,41 @@ jobs:
 
       - uses: snyk/actions/setup@master
 
-      # Escanea dependencias Gradle (raíz + subproyectos). No sustituye el análisis en snyk.io.
-      - name: Snyk test (Gradle)
+      - name: Comprobar SNYK_TOKEN
+        run: |
+          if [ -z "${{ secrets.SNYK_TOKEN }}" ]; then
+            echo "::error::Crea SNYK_TOKEN en GitHub → Settings → Secrets → Actions"
+            echo "Token: https://app.snyk.io/account"
+            exit 1
+          fi
+
+      # Android — dependencias Gradle
+      - name: Snyk test (Gradle / Android)
         run: snyk test --all-projects --severity-threshold=medium
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        continue-on-error: true
+
+  snyk-server:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+
+      - uses: snyk/actions/setup@master
+
+      - name: Instalar API
+        working-directory: server
+        run: npm ci --ignore-scripts
+
+      # API Node — dependencias npm
+      - name: Snyk test (server npm)
+        run: snyk test --file=server/package.json --severity-threshold=medium
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         continue-on-error: true

@@ -55,16 +55,27 @@ API por defecto: `http://0.0.0.0:3000`
 
 ### 3) App Android
 
-Definir `happyJump.api.baseUrl` en `local.properties`:
+Producción (default en Gradle):
 
-- Emulador: `http://10.0.2.2:3000/`
-- Celular fisico (misma Wi-Fi): `http://IP_DE_TU_PC:3000/`
+```properties
+happyJump.api.baseUrl=https://happyjump.sorbits.site/
+```
+
+Definir en `local.properties` si necesitas otro entorno.
 
 Compilar/instalar:
 
 ```bash
 ./gradlew :app:installDebug
 ```
+
+## Producción
+
+| Recurso | URL |
+|---------|-----|
+| API | https://happyjump.sorbits.site/ |
+| Swagger | https://happyjump.sorbits.site/swagger-ui/ |
+| Health | https://happyjump.sorbits.site/health |
 
 ## Credenciales demo (seed)
 
@@ -105,16 +116,31 @@ Tipos recomendados de commit:
 - `test:` pruebas
 - `docs:` documentacion
 
-## CI/CD (Jenkins + scripts)
+## CI/CD
+
+### GitHub Actions (CI + CD producción)
+
+| Workflow | Función |
+|----------|---------|
+| `api-tests.yml` | Tests unitarios API |
+| `sonarcloud.yml` | Tests Android, JaCoCo, SonarCloud |
+| `snyk.yml` | Análisis de dependencias |
+| `deploy-prod.yml` | Tras tests en `main`: webhook HTTPS → `GET /health` |
+
+Secrets de deploy (solo nombres): `HAPPYJUMP_DEPLOY_TOKEN`, `HAPPYJUMP_PUBLIC_URL` (opcional).
+
+Flujo CD: **push a `main` → tests → POST `/internal/deploy` → verificación `/health`**.
+
+### Jenkins (laboratorio local, opcional)
 
 - Guía: [`docs/GUIA_JENKINS_CI_CD.md`](docs/GUIA_JENKINS_CI_CD.md)
 - Build: `ci/build-production.sh` → `dist/` (API `.tar.gz` + APK)
-- Deploy: `ci/deploy-server.sh` → `~/servers/happyjump/`
-- Pipeline: `Jenkinsfile` (tests → Sonar → build → deploy)
+- Deploy local del agente: `ci/deploy-server.sh` → directorio de deploy en el servidor CI
+- Pipeline: `Jenkinsfile` (tests → Sonar → build → deploy local)
 
 ## Material para curso
 
 - Checklist de despliegue y testing: `docs/DESPLIEGUE_Y_PRUEBAS_CHECKLIST.md`
-- Entrega calidad / Sonar / Snyk / unit tests: `docs/EVIDENCIAS_CALIDAD_SONAR_SNYK.md`
-- Checklist profesor (ítems 2–5): `docs/CHECKLIST_ENTREGA_PROFESOR.md`
+- Evidencias Sonar / Snyk / unit tests: `docs/EVIDENCIAS_CALIDAD_SONAR_SNYK.md`
+- Documentación CI/CD: `docs/GUIA_JENKINS_CI_CD.md`
 

@@ -20,7 +20,7 @@ pipeline {
         BUILD_ID = "${env.BUILD_NUMBER ?: 'local'}-${env.GIT_COMMIT?.take(7) ?: 'nosha'}"
         HAPPYJUMP_DEPLOY_BASE = "${env.HAPPYJUMP_DEPLOY_BASE ?: '/var/jenkins_home/servers/happyjump'}"
         DOCKER_NETWORK = "${env.DOCKER_NETWORK ?: 'happyjump-ci_default'}"
-        JENKINS_HOST_WORKSPACE_ROOT = "${env.JENKINS_HOST_WORKSPACE_ROOT ?: 'E:/happyjump-ci/data/jenkins_home/workspace'}"
+        JENKINS_HOST_WORKSPACE_ROOT = "${env.JENKINS_HOST_WORKSPACE_ROOT ?: env.WORKSPACE}"
     }
 
     options {

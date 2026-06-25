@@ -46,10 +46,10 @@ val localProperties = Properties().apply {
     val f = rootProject.file("local.properties")
     if (f.exists()) f.inputStream().use { load(it) }
 }
-// Emulador: http://10.0.2.2:3000/  |  Celular en Wi‑Fi: IP de tu PC (ver local.properties)
+// Prod: https://happyjump.sorbits.site/  |  Dev: override en local.properties
 val happyJumpApiBaseUrl =
     localProperties.getProperty("happyJump.api.baseUrl")?.trim()?.takeIf { it.isNotEmpty() }
-        ?: "http://10.0.2.2:3000/"
+        ?: "https://happyjump.sorbits.site/"
 
 android {
     namespace = "com.example.happyj"

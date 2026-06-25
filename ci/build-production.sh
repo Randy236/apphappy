@@ -20,9 +20,12 @@ tar -czf "$API_TAR" \
   --exclude='server/.env' \
   server/package.json \
   server/package-lock.json \
+  server/openapi.json \
+  server/railway-schema.sql \
   server/src \
   server/migrations \
-  server/schema.sql
+  server/schema.sql \
+  server/scripts/init-railway-db.mjs
 
 echo "=== Android: pruebas unitarias + APK release ==="
 if command -v docker >/dev/null 2>&1 && [[ "${ANDROID_BUILD_DOCKER:-1}" == "1" ]]; then

@@ -3,6 +3,9 @@ import cors from "cors";
 import dotenv from "dotenv";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { spawn } from "node:child_process";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { pool } from "./db.js";
 import { setupSwagger } from "./swagger.js";
 import { calcularEstadoCancha } from "./domain/canchaEstado.js";
@@ -51,9 +54,34 @@ app.use(cors());
 app.use(express.json());
 setupSwagger(app, PORT);
 
-/** Prueba rápida desde el navegador del celular: http://IP_DE_TU_PC:3000/health */
+/** Comprobación de disponibilidad: GET /health */
 app.get("/health", (req, res) => {
   res.json({ ok: true, service: "happy-jump-api" });
+});
+
+/** CD: GitHub Actions → POST /internal/deploy con Bearer HAPPYJUMP_DEPLOY_TOKEN */
+app.post("/internal/deploy", (req, res) => {
+  const secret = process.env.HAPPYJUMP_DEPLOY_TOKEN;
+  if (!secret) {
+    return res.status(503).json({ error: "Deploy webhook no configurado" });
+  }
+  const auth = req.headers.authorization || "";
+  if (auth !== `Bearer ${secret}`) {
+    return res.status(401).json({ error: "No autorizado" });
+  }
+  const script = join(
+    dirname(fileURLToPath(import.meta.url)),
+    "..",
+    "scripts",
+    "prod-deploy.sh",
+  );
+  const child = spawn("sh", [script], {
+    detached: true,
+    stdio: "ignore",
+    env: process.env,
+  });
+  child.unref();
+  res.status(202).json({ ok: true, message: "Deploy iniciado" });
 });
 
 /** Endpoints ligeros para k6 (sin auth, sin DB) — ver docs/TUTORIAL_K6_HAPPY_JUMP.md */

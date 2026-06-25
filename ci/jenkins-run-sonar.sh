@@ -22,11 +22,11 @@ resolve_mount_dir() {
   if [[ -n "${WORKSPACE:-}" && -f "${WORKSPACE}/gradlew" ]]; then
     local job host_root
     job="$(basename "${WORKSPACE}")"
-    host_root="${JENKINS_HOST_WORKSPACE_ROOT:-E:/happyjump-ci/data/jenkins_home/workspace}"
+    host_root="${JENKINS_HOST_WORKSPACE_ROOT:-/var/jenkins_home/workspace}"
     echo "${host_root//\\//}/${job}"
     return
   fi
-  echo "${DOCKER_REPO_PATH:-D:/apphappy-full}"
+  echo "${DOCKER_REPO_PATH:-/workspace/apphappy}"
 }
 
 if ! gradlew_ready; then

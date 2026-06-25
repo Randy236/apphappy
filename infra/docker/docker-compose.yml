@@ -1,5 +1,6 @@
-# Happy Jump — SonarQube + Jenkins (datos en E:\happyjump-ci)
-# Uso: .\scripts\todo-en-disco-e.ps1  luego  docker compose up -d --build
+# Happy Jump — SonarQube + Jenkins (laboratorio CI local)
+# Uso: cd infra/docker && docker compose up -d --build
+# Datos persistentes: volumen Docker o HAPPYJUMP_CI_DATA (opcional)
 
 name: happyjump-ci
 
@@ -11,7 +12,7 @@ services:
       POSTGRES_PASSWORD: sonar
       POSTGRES_DB: sonar
     volumes:
-      - E:/happyjump-ci/data/sonar-db:/var/lib/postgresql/data
+      - sonar-db-data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U sonar -d sonar"]
       interval: 10s
@@ -33,9 +34,9 @@ services:
       SONAR_CE_JAVAOPTS: "-Xmx512m -Xms256m"
       SONAR_ES_JAVAOPTS: "-Xmx512m -Xms256m"
     volumes:
-      - E:/happyjump-ci/data/sonarqube/data:/opt/sonarqube/data
-      - E:/happyjump-ci/data/sonarqube/extensions:/opt/sonarqube/extensions
-      - E:/happyjump-ci/data/sonarqube/logs:/opt/sonarqube/logs
+      - sonarqube-data:/opt/sonarqube/data
+      - sonarqube-extensions:/opt/sonarqube/extensions
+      - sonarqube-logs:/opt/sonarqube/logs
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:9000/api/system/status | grep -q UP || exit 1"]
       interval: 30s
@@ -53,19 +54,27 @@ services:
       - "8081:8080"
       - "50000:50000"
     volumes:
-      - E:/happyjump-ci/data/jenkins_home:/var/jenkins_home
+      - jenkins-home:/var/jenkins_home
       - ../../:/workspace/apphappy
-      - E:/happyjump-ci/deploy-runtime:/var/jenkins_home/servers/happyjump
+      - deploy-runtime:/var/jenkins_home/servers/happyjump
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
       DOCKER_HOST: unix:///var/run/docker.sock
       SONAR_HOST_URL: http://sonarqube:9000
       DOCKER_NETWORK: happyjump-ci_default
-      JENKINS_HOST_WORKSPACE_ROOT: E:/happyjump-ci/data/jenkins_home/workspace
-      DOCKER_REPO_PATH: D:/apphappy-full
+      JENKINS_HOST_WORKSPACE_ROOT: /var/jenkins_home/workspace
+      DOCKER_REPO_PATH: /workspace/apphappy
       GRADLE_USER_HOME: /var/jenkins_home/.gradle
       NPM_CONFIG_CACHE: /var/jenkins_home/.npm
       JAVA_OPTS: "-Xmx1024m"
     depends_on:
       sonarqube:
         condition: service_started
+
+volumes:
+  sonar-db-data:
+  sonarqube-data:
+  sonarqube-extensions:
+  sonarqube-logs:
+  jenkins-home:
+  deploy-runtime:

@@ -1,0 +1,6 @@
+# Copia este archivo a local.properties y ajusta la ruta de tu Android SDK.
+# En Windows suele ser:
+sdk.dir=C\:\\Users\\TU_USUARIO\\AppData\\Local\\Android\\Sdk
+
+# API de producción
+happyJump.api.baseUrl=https://happyjump.sorbits.site/
