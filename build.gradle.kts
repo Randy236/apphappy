@@ -80,6 +80,32 @@ val sonarJavaClasses =
     File(rootDir, "app/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes")
         .absolutePath.replace('\\', '/')
 
+/** Excluidos del indice Sonar (evita warning de encoding en XML/Gradle/lockfiles). */
+val sonarSourceExclusions =
+    listOf(
+        "**/src/debug/**",
+        "**/debug/**",
+        "**/src/main/res/**",
+        "**/AndroidManifest.xml",
+        "tools/**",
+        "server/**",
+        "docs/**",
+        "k6/**",
+        "scripts/**",
+        "entregableunidad/**",
+        "zap/**",
+        "infra/**",
+        "**/*.lockfile",
+        "**/gradle.lockfile",
+        "**/settings-gradle.lockfile",
+        "**/build.gradle.kts",
+        "**/settings.gradle.kts",
+        "**/gradle.properties",
+        "**/libs.versions.toml",
+        "**/AppDispatchers.kt",
+        "**/HappyJumpApp.kt",
+    ).joinToString(",")
+
 sonar {
     properties {
         property("sonar.projectKey", "Randy236_apphappy")
@@ -93,16 +119,15 @@ sonar {
         property("sonar.junit.reportPaths", sonarTestResults)
         property("sonar.kotlin.sourceDirs", sonarKotlinSources)
         property("sonar.test.kotlin.sourceDirs", sonarKotlinTests)
+        property("sonar.sources", sonarKotlinSources)
+        property("sonar.tests", sonarKotlinTests)
         property("sonar.sourceEncoding", "UTF-8")
         property(
             "sonar.java.binaries",
             listOf(sonarKotlinClasses, sonarJavaClasses).joinToString(","),
         )
         property("sonar.coverage.exclusions", sonarCoverageExclusions)
-        property(
-            "sonar.exclusions",
-            "**/src/debug/**,**/debug/**,tools/sonar-informe/**,**/AppDispatchers.kt,**/HappyJumpApp.kt,**/*.lockfile,**/settings-gradle.lockfile",
-        )
+        property("sonar.exclusions", sonarSourceExclusions)
         property("sonar.issue.ignore.multicriteria", "compose_cc,compose_params,gradle_lock")
         property("sonar.issue.ignore.multicriteria.compose_cc.ruleKey", "kotlin:S3776")
         property("sonar.issue.ignore.multicriteria.compose_cc.resourceKey", "**/ui/**/*.kt")
@@ -140,6 +165,10 @@ tasks.register("verifySonarPrerequisites") {
                 "Lint ${lint.length()} bytes, kotlin-classes presente",
         )
     }
+}
+
+project(":tools:sonar-informe") {
+    extensions.extraProperties.set("sonar.skip", "true")
 }
 
 tasks.named("sonar") {
