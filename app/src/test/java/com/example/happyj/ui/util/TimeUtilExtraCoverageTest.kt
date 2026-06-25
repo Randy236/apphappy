@@ -144,8 +144,9 @@ class TimeUtilExtraCoverageTest {
     }
 
     @Test
-    fun localDateDesdeCampoApi_formato_corto_valido() {
-        assertEquals(LocalDate.of(2026, 4, 9), localDateDesdeCampoApi("2026-4-9"))
+    fun localDateDesdeCampoApi_formato_corto_sin_ceros_retorna_null() {
+        // ISO estricto (yyyy-MM-dd); "2026-4-9" no es válido en CI/Linux ni en Android.
+        assertNull(localDateDesdeCampoApi("2026-4-9"))
     }
 
     @Test
