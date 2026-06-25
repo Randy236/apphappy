@@ -98,10 +98,6 @@ val sonarSourceExclusions =
         "**/*.lockfile",
         "**/gradle.lockfile",
         "**/settings-gradle.lockfile",
-        "**/build.gradle.kts",
-        "**/settings.gradle.kts",
-        "**/gradle.properties",
-        "**/libs.versions.toml",
         "**/AppDispatchers.kt",
         "**/HappyJumpApp.kt",
     ).joinToString(",")
@@ -119,8 +115,6 @@ sonar {
         property("sonar.junit.reportPaths", sonarTestResults)
         property("sonar.kotlin.sourceDirs", sonarKotlinSources)
         property("sonar.test.kotlin.sourceDirs", sonarKotlinTests)
-        property("sonar.sources", sonarKotlinSources)
-        property("sonar.tests", sonarKotlinTests)
         property("sonar.sourceEncoding", "UTF-8")
         property(
             "sonar.java.binaries",
