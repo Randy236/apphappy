@@ -52,13 +52,23 @@ jobs:
           test -d app/build/tmp/kotlin-classes/debug && echo "kotlin-classes OK" || echo "WARN kotlin-classes"
 
       - name: Comprobar SONAR_TOKEN
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
-          if [ -z "${{ secrets.SONAR_TOKEN }}" ]; then
+          if [ -z "$SONAR_TOKEN" ]; then
             echo "::error::Crea el secreto SONAR_TOKEN en GitHub → Settings → Secrets → Actions"
             echo "Token en https://sonarcloud.io → My Account → Security → Generate Token"
             exit 1
           fi
-          echo "SONAR_TOKEN configurado"
+          http_code=$(curl -s -o /tmp/sonar-validate.json -w "%{http_code}" \
+            -H "Authorization: Bearer $SONAR_TOKEN" \
+            "https://sonarcloud.io/api/authentication/validate")
+          if [ "$http_code" != "200" ]; then
+            echo "::error::SONAR_TOKEN rechazado por SonarCloud (HTTP $http_code). Genera token nuevo con cuenta Randy236."
+            cat /tmp/sonar-validate.json || true
+            exit 1
+          fi
+          echo "SONAR_TOKEN válido para SonarCloud"
 
       # Sonar recomienda plugin Gradle (no sonarcloud-github-action) en proyectos Android/Gradle
       - name: Subir análisis y cobertura (Gradle sonar)
@@ -71,6 +81,7 @@ jobs:
             -Dsonar.host.url=https://sonarcloud.io \
             -Dsonar.projectKey=Randy236_apphappy \
             -Dsonar.organization=randy236 \
+            -Dsonar.token="$SONAR_TOKEN" \
             2>&1 | tee sonar-log.txt
           if [ ${PIPESTATUS[0]} -ne 0 ]; then
             echo "::error::Gradle sonar falló. Revisa sonar-log.txt (host, token o Automatic Analysis)"
