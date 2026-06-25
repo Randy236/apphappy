@@ -1,7 +1,8 @@
 # Cobertura en SonarCloud: corre tests + JaCoCo y luego envía el XML.
-# 1) En SonarCloud: Account → Security → genera un token (Analysis / SonarQube Cloud).
-# 2) En GitHub del repo: Settings → Secrets → Actions → SONAR_TOKEN
-# 3) Si el análisis falla por "project key", edita sonar-project.properties con los valores
+# 1) SonarCloud → proyecto → Administration → Analysis Method → DESACTIVAR Automatic Analysis
+#    (si no, Gradle falla: "manual analysis while Automatic Analysis is enabled")
+# 2) SonarCloud: Account → Security → genera SONAR_TOKEN
+# 3) GitHub: Settings → Secrets → Actions → SONAR_TOKEN
 #    exactos de: SonarCloud → proyecto → Administration → Update Key
 name: SonarCloud
 
@@ -30,8 +31,18 @@ jobs:
       - name: Gradle (cache)
         uses: gradle/actions/setup-gradle@v4
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+
+      - name: Pruebas unitarias API (Node, ítem 5)
+        working-directory: server
+        run: npm ci --ignore-scripts && npm run test:ci && npm run coverage:verify
+
       # Más heap que gradle.properties local (1536m) evita que el daemon muera en CI al compilar + tests.
-      - name: Pruebas unitarias + informe JaCoCo
+      - name: Pruebas unitarias Android + informe JaCoCo
         run: chmod +x gradlew && ./gradlew -Dorg.gradle.jvmargs="-Xmx2560m -XX:MaxMetaspaceSize=512m -Dfile.encoding=UTF-8" :app:testDebugUnitTest :app:jacocoTestReport :app:printJacocoTotals --no-daemon
 
       - name: Verificar JaCoCo (sin esto Sonar muestra "Coverage No data")
@@ -56,12 +67,29 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
           chmod +x gradlew
-          ./gradlew sonar --no-daemon --info 2>&1 | tee sonar-log.txt
+          ./gradlew sonar --no-daemon --info \
+            -Dsonar.host.url=https://sonarcloud.io \
+            -Dsonar.projectKey=Randy236_apphappy \
+            -Dsonar.organization=randy236 \
+            2>&1 | tee sonar-log.txt
           if [ ${PIPESTATUS[0]} -ne 0 ]; then
-            echo "::error::Gradle sonar falló. Busca ERROR en sonar-log.txt (suele ser SONAR_TOKEN inválido)"
-            grep -i "error\|unauthorized\|quality gate" sonar-log.txt | tail -30 || true
+            echo "::error::Gradle sonar falló. Revisa sonar-log.txt (host, token o Automatic Analysis)"
+            grep -i "error\|unauthorized\|quality gate\|localhost:9000\|can not be reached" sonar-log.txt | tail -30 || true
             exit 1
           fi
+          echo "=== Log Sonar (cobertura / JaCoCo) ==="
+          grep -iE "jacoco|coverage|imported|sensor.*java" sonar-log.txt | tail -25 || true
+          if ! grep -qi "jacocoTestReport.xml" sonar-log.txt; then
+            echo "::warning::No se ve jacocoTestReport.xml en el log; revisa sonar.coverage.jacoco.xmlReportPaths"
+          fi
+
+      - name: Guardar log Sonar (depuración)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sonar-log
+          path: sonar-log.txt
+          retention-days: 7
 
       - name: Guardar informe JaCoCo (evidencia ítem 3)
         if: always()

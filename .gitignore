@@ -24,6 +24,10 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+sonar-project.local.properties
+sonar-log-local.txt
+sonar-debug.txt
+
 # Python
 __pycache__/
 *.py[cod]
