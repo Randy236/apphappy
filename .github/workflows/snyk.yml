@@ -1,5 +1,6 @@
 # Requiere secret SNYK_TOKEN en GitHub: Settings → Secrets → Actions
 # Cómo obtener token: https://app.snyk.io/account (Auth token / Service accounts)
+# Sin token: el workflow termina en verde con aviso (no bloquea push/PR).
 name: Snyk Security
 
 on:
@@ -13,7 +14,17 @@ permissions:
   contents: read
 
 jobs:
+  snyk-reminder:
+    if: ${{ secrets.SNYK_TOKEN == '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: SNYK_TOKEN no configurado
+        run: |
+          echo "::warning::Omitiendo Snyk: crea SNYK_TOKEN en GitHub → Settings → Secrets → Actions"
+          echo "Token: https://app.snyk.io/account"
+
   snyk-gradle:
+    if: ${{ secrets.SNYK_TOKEN != '' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -25,14 +36,6 @@ jobs:
 
       - uses: snyk/actions/setup@master
 
-      - name: Comprobar SNYK_TOKEN
-        run: |
-          if [ -z "${{ secrets.SNYK_TOKEN }}" ]; then
-            echo "::error::Crea SNYK_TOKEN en GitHub → Settings → Secrets → Actions"
-            echo "Token: https://app.snyk.io/account"
-            exit 1
-          fi
-
       # Android — dependencias Gradle
       - name: Snyk test (Gradle / Android)
         run: snyk test --all-projects --severity-threshold=medium
@@ -41,6 +44,7 @@ jobs:
         continue-on-error: true
 
   snyk-server:
+    if: ${{ secrets.SNYK_TOKEN != '' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
