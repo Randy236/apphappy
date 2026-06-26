@@ -1,0 +1,275 @@
+{
+  "info": {
+    "_postman_id": "happy-jump-seguridad",
+    "name": "Happy Jump API — Pruebas de seguridad",
+    "description": "Casos SEC-001 … SEC-017 de docs/CASOS_SEGURIDAD.csv.\n\nUsuarios seed: Admin / Rosisela — PIN 1234\n\nEjecutar carpeta completa con Collection Runner (orden secuencial).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" },
+    { "key": "tokenAdmin", "value": "" },
+    { "key": "tokenWorker", "value": "" },
+    { "key": "workerId", "value": "2" }
+  ],
+  "item": [
+    {
+      "name": "SEC-001 Sin token",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/reservas-cancha?fecha=2026-05-29"
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": [
+            "pm.test('SEC-001: 401 sin token', () => pm.response.to.have.status(401));"
+          ],
+          "type": "text/javascript"
+        }
+      }]
+    },
+    {
+      "name": "SEC-002 Token invalido",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer token.falso.invalido" }],
+        "url": "{{baseUrl}}/reservas-cancha?fecha=2026-05-29"
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": [
+            "pm.test('SEC-002: 401 token invalido', () => pm.response.to.have.status(401));"
+          ],
+          "type": "text/javascript"
+        }
+      }]
+    },
+    {
+      "name": "SEC-003 Login incorrecto",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombre\": \"Admin\",\n  \"pin\": \"9999\"\n}"
+        },
+        "url": "{{baseUrl}}/auth/login"
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": [
+            "pm.test('SEC-003: 401 credenciales incorrectas', () => pm.response.to.have.status(401));"
+          ],
+          "type": "text/javascript"
+        }
+      }]
+    },
+    {
+      "name": "Login Admin (setup)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombre\": \"Admin\",\n  \"pin\": \"1234\"\n}"
+        },
+        "url": "{{baseUrl}}/auth/login"
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": [
+            "pm.test('Login admin 200', () => pm.response.to.have.status(200));",
+            "const j = pm.response.json();",
+            "pm.collectionVariables.set('tokenAdmin', j.token);"
+          ],
+          "type": "text/javascript"
+        }
+      }]
+    },
+    {
+      "name": "SEC-004 Sesion duplicada",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombre\": \"Admin\",\n  \"pin\": \"1234\"\n}"
+        },
+        "url": "{{baseUrl}}/auth/login"
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": [
+            "pm.test('SEC-004: 409 sesion duplicada', () => pm.response.to.have.status(409));"
+          ],
+          "type": "text/javascript"
+        }
+      }]
+    },
+    {
+      "name": "Logout Admin (setup SEC-005)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Authorization", "value": "Bearer {{tokenAdmin}}" }],
+        "url": "{{baseUrl}}/auth/logout"
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": [
+            "pm.test('Logout 200', () => pm.response.to.have.status(200));"
+          ],
+          "type": "text/javascript"
+        }
+      }]
+    },
+    {
+      "name": "SEC-005 Token tras logout",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{tokenAdmin}}" }],
+        "url": "{{baseUrl}}/reservas-cancha?fecha=2026-05-29"
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": [
+            "pm.test('SEC-005: 401 tras logout', () => pm.response.to.have.status(401));"
+          ],
+          "type": "text/javascript"
+        }
+      }]
+    },
+    {
+      "name": "Login Worker (setup)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombre\": \"Rosisela\",\n  \"pin\": \"1234\"\n}"
+        },
+        "url": "{{baseUrl}}/auth/login"
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": [
+            "pm.test('Login worker 200', () => pm.response.to.have.status(200));",
+            "const j = pm.response.json();",
+            "pm.collectionVariables.set('tokenWorker', j.token);",
+            "pm.collectionVariables.set('workerId', String(j.usuario.id));"
+          ],
+          "type": "text/javascript"
+        }
+      }]
+    },
+    {
+      "name": "SEC-006 Trabajador sin reportes",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{tokenWorker}}" }],
+        "url": "{{baseUrl}}/reportes?desde=2026-05-01&hasta=2026-05-31"
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": [
+            "pm.test('SEC-006: 403 trabajador', () => pm.response.to.have.status(403));"
+          ],
+          "type": "text/javascript"
+        }
+      }]
+    },
+    {
+      "name": "SEC-007 PIN ajeno bloqueado",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{tokenWorker}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"pinActual\": \"1234\",\n  \"pinNuevo\": \"5678\"\n}"
+        },
+        "url": "{{baseUrl}}/usuarios/1/pin"
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": [
+            "pm.test('SEC-007: 403 PIN ajeno', () => pm.response.to.have.status(403));"
+          ],
+          "type": "text/javascript"
+        }
+      }]
+    },
+    {
+      "name": "SEC-010 SQL injection login",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombre\": \"' OR '1'='1\",\n  \"pin\": \"1234\"\n}"
+        },
+        "url": "{{baseUrl}}/auth/login"
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": [
+            "pm.test('SEC-010: no bypass login', () => pm.expect(pm.response.code).to.be.oneOf([400, 401]));"
+          ],
+          "type": "text/javascript"
+        }
+      }]
+    },
+    {
+      "name": "SEC-016 Health publico",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/health"
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": [
+            "pm.test('SEC-016: health 200', () => pm.response.to.have.status(200));"
+          ],
+          "type": "text/javascript"
+        }
+      }]
+    },
+    {
+      "name": "SEC-017 PIN minimo invalido",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{tokenWorker}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"pinActual\": \"1234\",\n  \"pinNuevo\": \"123\"\n}"
+        },
+        "url": "{{baseUrl}}/usuarios/{{workerId}}/pin"
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": [
+            "pm.test('SEC-017: 400 PIN corto', () => pm.response.to.have.status(400));"
+          ],
+          "type": "text/javascript"
+        }
+      }]
+    }
+  ]
+}

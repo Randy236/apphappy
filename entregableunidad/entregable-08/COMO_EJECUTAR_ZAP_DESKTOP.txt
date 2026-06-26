@@ -1,0 +1,122 @@
+ENTREGABLE 8 — Reporte ZAP como el del profesor (ZAP Desktop 2.17)
+====================================================================
+
+El informe debe verse asi:
+  - Titulo: "Reporte de Seguridad DAST - ..."
+  - "Generado con ZAP en [fecha]"
+  - ZAP Version 2.17.x
+  - Tabla de contenidos: Summaries, Alert Counts by Risk, etc.
+
+Eso lo genera OWASP ZAP DESKTOP (no un Word inventado).
+El Word/Excel del proyecto son COMPLEMENTO; la evidencia principal es el .html
+
+
+PASO 1 — API encendida
+----------------------
+  Laragon → Start All
+  cd D:\apphappy-full\server
+  npm start
+
+Comprueba: http://localhost:3000/health  →  {"ok":true}
+
+
+PASO 2 — Instalar OWASP ZAP 2.17
+--------------------------------
+  https://www.zaproxy.org/download/
+
+Instala "ZAP 2.17" para Windows (misma version que el ejemplo del salon).
+
+
+PASO 3 — Idioma espanol (opcional, para que diga "Reporte de Seguridad DAST")
+-----------------------------------------------------------------------------
+En ZAP:
+  Tools → Options → Language → Espanol → reinicia ZAP
+
+
+PASO 4 — Importar la API (OpenAPI)
+----------------------------------
+1. Abre ZAP
+2. Menu: Import → Import an OpenAPI/Swagger Definition from File
+   (o: Archivo → Importar definicion OpenAPI)
+3. Archivo:
+     D:\apphappy-full\server\openapi.json
+4. Target URL / URL del servidor:
+     http://localhost:3000
+5. Aceptar / Import
+
+ZAP cargara todos los endpoints de Happy Jump.
+
+
+PASO 5 — Ejecutar el escaneo
+----------------------------
+Opcion A (mas simple):
+  - Automated Scan
+  - URL: http://localhost:3000
+  - Marca "Use OpenAPI definition" si aparece
+  - Start Scan
+
+Opcion B (solo API):
+  - Clic derecho en el sitio http://localhost:3000
+  - Attack → Active Scan
+
+Espera a que termine la barra de progreso (5-15 min).
+
+
+PASO 6 — Generar el HTML como el del profesor  *** IMPORTANTE ***
+---------------------------------------------------------------
+1. Menu superior: Report (Informe) → Generate Report (Generar informe)
+2. Plantilla / Template:
+     "DAST Security Report"
+     o "Traditional HTML Report"
+     (debe salir con tabla de contenidos y resumenes)
+3. Titulo del informe:
+     Happy Jump API
+     (en espanol puede salir: Reporte de Seguridad DAST - Happy Jump API)
+4. Guardar como:
+     D:\apphappy-full\entregableunidad\entregable-08\ZAP-Report-HappyJump.html
+
+5. Abre el .html en el navegador y verifica que se ve como la foto del profesor:
+   - Encabezado azul
+   - "Generado con ZAP en ..."
+   - ZAP Version 2.17.x
+   - Summaries / Alert Counts by Risk and Confidence
+
+
+PASO 7 — Captura para entregar
+------------------------------
+Opcion 1: Entrega el archivo ZAP-Report-HappyJump.html
+Opcion 2: Captura de pantalla del navegador mostrando el inicio del informe
+
+
+PASO 8 — Word y Excel (complemento del curso)
+---------------------------------------------
+  cd D:\apphappy-full
+  .\scripts\generar-informe-seguridad-zap.ps1
+
+Copia tambien:
+  INFORME_PRUEBAS_SEGURIDAD_ZAP.docx
+  RESULTADOS_SEGURIDAD_ZAP.xlsx
+
+
+PASO 9 — Carpeta final entregable-08
+------------------------------------
+  ZAP-Report-HappyJump.html     ← OBLIGATORIO (como el salon)
+  INFORME_PRUEBAS_SEGURIDAD_ZAP.docx
+  RESULTADOS_SEGURIDAD_ZAP.xlsx
+  (opcional) captura .png del reporte
+
+
+ALTERNATIVA Docker (si no instalas ZAP Desktop)
+-----------------------------------------------
+  Docker Desktop encendido
+  .\scripts\run-zap-seguridad.ps1
+
+Genera zap\zap-report.html (formato puede variar un poco del Desktop).
+Si el profesor exige el formato exacto de la foto, usa ZAP Desktop 2.17.
+
+
+Si login falla durante el escaneo:
+  cd D:\apphappy-full\server
+  node scripts/clear-sessions-for-k6.mjs
+
+Usuarios: Admin / Rosisela — PIN 1234

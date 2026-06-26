@@ -1,0 +1,322 @@
+{
+  "info": {
+    "_postman_id": "happy-jump-validaciones",
+    "name": "Happy Jump API — Validación de parámetros",
+    "description": "Pruebas integrales Postman: entradas inválidas deben responder HTTP 400.\n\nUsuarios seed: Admin / Rosisela — PIN 1234\n\nEjecutar con Collection Runner (orden secuencial). API en https://happyjump.sorbits.site",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "https://happyjump.sorbits.site" },
+    { "key": "tokenAdmin", "value": "" },
+    { "key": "tokenWorker", "value": "" },
+    { "key": "workerId", "value": "2" }
+  ],
+  "item": [
+    {
+      "name": "VAL-001 Login nombre con números",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombre\": \"Admin123\",\n  \"pin\": \"1234\"\n}"
+        },
+        "url": "{{baseUrl}}/auth/login"
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": ["pm.test('VAL-001: 400 nombre con números', () => pm.response.to.have.status(400));"],
+          "type": "text/javascript"
+        }
+      }]
+    },
+    {
+      "name": "VAL-002 Login PIN con letras",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombre\": \"Admin\",\n  \"pin\": \"12ab\"\n}"
+        },
+        "url": "{{baseUrl}}/auth/login"
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": ["pm.test('VAL-002: 400 PIN con letras', () => pm.response.to.have.status(400));"],
+          "type": "text/javascript"
+        }
+      }]
+    },
+    {
+      "name": "VAL-003 Login PIN más de 5 dígitos",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombre\": \"Admin\",\n  \"pin\": \"123456\"\n}"
+        },
+        "url": "{{baseUrl}}/auth/login"
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": ["pm.test('VAL-003: 400 PIN largo', () => pm.response.to.have.status(400));"],
+          "type": "text/javascript"
+        }
+      }]
+    },
+    {
+      "name": "VAL-004 Login PIN corto",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombre\": \"Admin\",\n  \"pin\": \"123\"\n}"
+        },
+        "url": "{{baseUrl}}/auth/login"
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": ["pm.test('VAL-004: 400 PIN corto', () => pm.response.to.have.status(400));"],
+          "type": "text/javascript"
+        }
+      }]
+    },
+    {
+      "name": "Login Admin (setup)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombre\": \"Admin\",\n  \"pin\": \"1234\"\n}"
+        },
+        "url": "{{baseUrl}}/auth/login"
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": [
+            "pm.test('Login admin 200', () => pm.response.to.have.status(200));",
+            "pm.collectionVariables.set('tokenAdmin', pm.response.json().token);"
+          ],
+          "type": "text/javascript"
+        }
+      }]
+    },
+    {
+      "name": "VAL-005 Reportes periodo inválido",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{tokenAdmin}}" }],
+        "url": "{{baseUrl}}/reportes?periodo=anual"
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": ["pm.test('VAL-005: 400 periodo', () => pm.response.to.have.status(400));"],
+          "type": "text/javascript"
+        }
+      }]
+    },
+    {
+      "name": "VAL-006 Cancha deporte inválido",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{tokenAdmin}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombreCliente\": \"Juan Pérez\",\n  \"deporte\": \"Tenis\",\n  \"fecha\": \"2030-06-15\",\n  \"hora\": \"10:00:00\",\n  \"montoTotal\": 50,\n  \"adelanto\": 20\n}"
+        },
+        "url": "{{baseUrl}}/reservas-cancha"
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": ["pm.test('VAL-006: 400 deporte', () => pm.response.to.have.status(400));"],
+          "type": "text/javascript"
+        }
+      }]
+    },
+    {
+      "name": "VAL-007 Cancha monto negativo",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{tokenAdmin}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombreCliente\": \"Juan Pérez\",\n  \"deporte\": \"Futbol\",\n  \"fecha\": \"2030-06-15\",\n  \"hora\": \"10:00:00\",\n  \"montoTotal\": -10,\n  \"adelanto\": 0\n}"
+        },
+        "url": "{{baseUrl}}/reservas-cancha"
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": ["pm.test('VAL-007: 400 monto', () => pm.response.to.have.status(400));"],
+          "type": "text/javascript"
+        }
+      }]
+    },
+    {
+      "name": "VAL-008 Cancha fecha inválida",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{tokenAdmin}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombreCliente\": \"Juan Pérez\",\n  \"deporte\": \"Futbol\",\n  \"fecha\": \"15-06-2030\",\n  \"hora\": \"10:00:00\",\n  \"montoTotal\": 50,\n  \"adelanto\": 20\n}"
+        },
+        "url": "{{baseUrl}}/reservas-cancha"
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": ["pm.test('VAL-008: 400 fecha', () => pm.response.to.have.status(400));"],
+          "type": "text/javascript"
+        }
+      }]
+    },
+    {
+      "name": "VAL-009 Cancha adelanto mayor que total",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{tokenAdmin}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombreCliente\": \"Juan Pérez\",\n  \"deporte\": \"Futbol\",\n  \"fecha\": \"2030-06-15\",\n  \"hora\": \"10:00:00\",\n  \"montoTotal\": 50,\n  \"adelanto\": 80\n}"
+        },
+        "url": "{{baseUrl}}/reservas-cancha"
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": ["pm.test('VAL-009: 400 adelanto', () => pm.response.to.have.status(400));"],
+          "type": "text/javascript"
+        }
+      }]
+    },
+    {
+      "name": "Logout Admin (setup worker)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Authorization", "value": "Bearer {{tokenAdmin}}" }],
+        "url": "{{baseUrl}}/auth/logout"
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": ["pm.test('Logout 200', () => pm.response.to.have.status(200));"],
+          "type": "text/javascript"
+        }
+      }]
+    },
+    {
+      "name": "Login Worker (setup)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombre\": \"Rosisela\",\n  \"pin\": \"1234\"\n}"
+        },
+        "url": "{{baseUrl}}/auth/login"
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": [
+            "pm.test('Login worker 200', () => pm.response.to.have.status(200));",
+            "const j = pm.response.json();",
+            "pm.collectionVariables.set('tokenWorker', j.token);",
+            "pm.collectionVariables.set('workerId', String(j.usuario.id));"
+          ],
+          "type": "text/javascript"
+        }
+      }]
+    },
+    {
+      "name": "VAL-010 Salón inválido",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{tokenWorker}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombreCliente\": \"María López\",\n  \"tipoEvento\": \"Otro\",\n  \"zona\": \"Zona A\",\n  \"numeroNinos\": 10,\n  \"horaInicio\": \"14:00:00\",\n  \"horaFin\": \"16:00:00\",\n  \"precioTotal\": 200,\n  \"adelanto\": 50,\n  \"salon\": \"Salón Falso\",\n  \"fecha\": \"2030-06-20\"\n}"
+        },
+        "url": "{{baseUrl}}/reservas-salones"
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": ["pm.test('VAL-010: 400 salón', () => pm.response.to.have.status(400));"],
+          "type": "text/javascript"
+        }
+      }]
+    },
+    {
+      "name": "VAL-011 PIN nuevo más de 5 dígitos",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{tokenWorker}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"pinActual\": \"1234\",\n  \"pinNuevo\": \"123456\"\n}"
+        },
+        "url": "{{baseUrl}}/usuarios/{{workerId}}/pin"
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": ["pm.test('VAL-011: 400 PIN nuevo largo', () => pm.response.to.have.status(400));"],
+          "type": "text/javascript"
+        }
+      }]
+    },
+    {
+      "name": "VAL-012 Cumpleaños sin nombre cumpleañero",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{tokenWorker}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombreCliente\": \"María López\",\n  \"tipoEvento\": \"Cumpleanos\",\n  \"zona\": \"Zona A\",\n  \"numeroNinos\": 15,\n  \"horaInicio\": \"14:00:00\",\n  \"horaFin\": \"16:00:00\",\n  \"precioTotal\": 300,\n  \"adelanto\": 100,\n  \"salon\": \"Salón Principal\",\n  \"fecha\": \"2030-06-20\"\n}"
+        },
+        "url": "{{baseUrl}}/reservas-salones"
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": ["pm.test('VAL-012: 400 cumpleañero', () => pm.response.to.have.status(400));"],
+          "type": "text/javascript"
+        }
+      }]
+    }
+  ]
+}

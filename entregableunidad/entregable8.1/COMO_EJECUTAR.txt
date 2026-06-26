@@ -1,0 +1,79 @@
+ENTREGABLE 12 — Pruebas de Rendimiento (8.1)
+============================================
+
+OBJETIVO
+--------
+Documentar pruebas de rendimiento de la API Happy Jump con k6,
+considerando las características del servidor (CPU, RAM, SO, Node.js, MySQL).
+
+
+PASO 1 — Requisitos
+-------------------
+  - Laragon: MySQL encendido
+  - Node.js instalado
+  - k6 instalado:
+      winget install GrafanaLabs.k6
+      k6 version
+  - Python 3 (para generar el Word)
+
+
+PASO 2 — Encender la API
+------------------------
+  cd D:\apphappy-full\server
+  npm start
+
+Comprueba: http://localhost:3000/health  →  {"ok":true}
+
+
+PASO 3 — Generar informe completo (UN SOLO COMANDO)
+---------------------------------------------------
+  cd D:\apphappy-full
+  .\scripts\generar-informe-rendimiento.ps1
+
+Esto hace:
+  1. Libera sesiones de usuario (para que login en k6 no falle)
+  2. Lee CPU, RAM, SO, Node.js, k6 → servidor-info.json
+  3. Ejecuta k6/performance-api.js (~5 min):
+     - Smoke (1 usuario)
+     - Carga (hasta 20 usuarios virtuales)
+     - Estrés (hasta 60 usuarios virtuales)
+  4. Genera INFORME_PRUEBAS_RENDIMIENTO.docx
+  5. Genera METRICAS_RENDIMIENTO.xlsx
+  6. Copia todo a entregableunidad\entregable-12\
+
+
+PASO 4 — Entregar al profesor
+-----------------------------
+Carpeta: entregableunidad\entregable-12\
+
+  OBLIGATORIO:
+    INFORME_PRUEBAS_RENDIMIENTO.docx
+
+  COMPLEMENTO:
+    METRICAS_RENDIMIENTO.xlsx
+    performance-latest.txt (evidencia consola k6)
+
+
+SI LOGIN FALLA EN K6
+--------------------
+  cd D:\apphappy-full\server
+  node scripts/clear-sessions-for-k6.mjs
+
+Usuarios: Admin / Rosisela — PIN 1234
+
+
+ESCENARIOS INCLUIDOS EN EL INFORME
+----------------------------------
+| Escenario | Qué mide                          |
+|-----------|-----------------------------------|
+| Smoke     | API responde correctamente (1 VU) |
+| Carga     | 10-20 usuarios consultando API    |
+| Estrés    | Pico de 60 usuarios en /health    |
+
+Umbrales: error < 5%, p95 < 800 ms, checks >= 90%
+
+
+MANUAL (solo k6, sin Word)
+--------------------------
+  .\scripts\run-k6-all.ps1          ← smoke todos los endpoints
+  k6 run k6/performance-api.js      ← rendimiento completo

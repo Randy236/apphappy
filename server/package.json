@@ -28,6 +28,8 @@
     "soft-delete:verify": "node scripts/verify-soft-delete.mjs",
     "auditoria:verify": "node scripts/verify-auditoria.mjs",
     "usuario:crear": "node scripts/crear-usuario.mjs",
+    "usuarios:prueba": "node scripts/crear-usuarios-prueba.mjs",
+    "migrate:011": "node scripts/apply-migration-011.mjs",
     "swagger:verify": "node scripts/verify-swagger-coverage.mjs",
     "k6:api": "node scripts/k6-api.mjs"
   },

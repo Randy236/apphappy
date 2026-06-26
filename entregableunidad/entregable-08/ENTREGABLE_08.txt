@@ -1,0 +1,13 @@
+
+Entregable 8 — Informes de Pruebas de Seguridad (OWASP ZAP)
+
+EVIDENCIA PRINCIPAL (como el salon):
+  Reporte HTML "Reporte de Seguridad DAST" generado con ZAP Desktop 2.17
+  Ver: COMO_EJECUTAR_ZAP_DESKTOP.txt
+
+Complemento:
+  INFORME_PRUEBAS_SEGURIDAD_ZAP.docx
+  RESULTADOS_SEGURIDAD_ZAP.xlsx
+  (scripts\generar-informe-seguridad-zap.ps1)
+
+Repositorio: https://github.com/Randy236/apphappy

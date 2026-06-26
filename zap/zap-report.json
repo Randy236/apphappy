@@ -1,0 +1,249 @@
+{
+	"@programName": "ZAP",
+	"@version": "2.17.0",
+	"@generated": "mar, 23 jun. 2026 15:04:18",
+	"created": "2026-06-23T20:04:18.045108500Z",
+	"site":[ 
+		{
+			"@name": "http://localhost:3000",
+			"@host": "localhost",
+			"@port": "3000",
+			"@ssl": "false",
+			"alerts": [ 
+				{
+					"pluginid": "10098",
+					"alertRef": "10098",
+					"alert": "Configuraci\u00F3n Incorrecta Cross-Domain",
+					"name": "Configuraci\u00F3n Incorrecta Cross-Domain",
+					"riskcode": "2",
+					"confidence": "2",
+					"riskdesc": "Medio (Media)",
+					"desc": "<p>La carga de datos del navegador web puede ser posible, debido a una mala configuraci\u00F3n de Cross Origin Resource Sharing (CORS) en el servidor web.</p>",
+					"instances":[ 
+						{
+							"id": "7",
+							"uri": "http://localhost:3000/usuarios/10",
+							"nodeName": "http:\/\/localhost:3000\/usuarios\/10",
+							"method": "DELETE",
+							"param": "",
+							"attack": "",
+							"evidence": "Access-Control-Allow-Origin: *",
+							"otherinfo": "La configuraci\u00F3n incorrecta de CORS en el servidor web permite solicitudes de lectura entre dominios de terceros arbitrarios, utilizando API no autenticadas en este dominio. Sin embargo, las implementaciones de los navegadores web no permiten que terceros arbitrarios lean la respuesta de las API autenticadas. Esto reduce un poco el riesgo. Esta configuraci\u00F3n err\u00F3nea podr\u00EDa ser utilizada por un atacante para acceder a datos que est\u00E1n disponibles de forma no autenticada, pero que utilizan alguna otra forma de seguridad, como la lista blanca de direcciones IP."
+						},
+						{
+							"id": "0",
+							"uri": "http://localhost:3000/health",
+							"nodeName": "http:\/\/localhost:3000\/health",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "Access-Control-Allow-Origin: *",
+							"otherinfo": "La configuraci\u00F3n incorrecta de CORS en el servidor web permite solicitudes de lectura entre dominios de terceros arbitrarios, utilizando API no autenticadas en este dominio. Sin embargo, las implementaciones de los navegadores web no permiten que terceros arbitrarios lean la respuesta de las API autenticadas. Esto reduce un poco el riesgo. Esta configuraci\u00F3n err\u00F3nea podr\u00EDa ser utilizada por un atacante para acceder a datos que est\u00E1n disponibles de forma no autenticada, pero que utilizan alguna otra forma de seguridad, como la lista blanca de direcciones IP."
+						},
+						{
+							"id": "5",
+							"uri": "http://localhost:3000/hello",
+							"nodeName": "http:\/\/localhost:3000\/hello",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "Access-Control-Allow-Origin: *",
+							"otherinfo": "La configuraci\u00F3n incorrecta de CORS en el servidor web permite solicitudes de lectura entre dominios de terceros arbitrarios, utilizando API no autenticadas en este dominio. Sin embargo, las implementaciones de los navegadores web no permiten que terceros arbitrarios lean la respuesta de las API autenticadas. Esto reduce un poco el riesgo. Esta configuraci\u00F3n err\u00F3nea podr\u00EDa ser utilizada por un atacante para acceder a datos que est\u00E1n disponibles de forma no autenticada, pero que utilizan alguna otra forma de seguridad, como la lista blanca de direcciones IP."
+						},
+						{
+							"id": "6",
+							"uri": "http://localhost:3000/reservas-cancha?desde=desde&hasta=hasta",
+							"nodeName": "http:\/\/localhost:3000\/reservas-cancha (desde,hasta)",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "Access-Control-Allow-Origin: *",
+							"otherinfo": "La configuraci\u00F3n incorrecta de CORS en el servidor web permite solicitudes de lectura entre dominios de terceros arbitrarios, utilizando API no autenticadas en este dominio. Sin embargo, las implementaciones de los navegadores web no permiten que terceros arbitrarios lean la respuesta de las API autenticadas. Esto reduce un poco el riesgo. Esta configuraci\u00F3n err\u00F3nea podr\u00EDa ser utilizada por un atacante para acceder a datos que est\u00E1n disponibles de forma no autenticada, pero que utilizan alguna otra forma de seguridad, como la lista blanca de direcciones IP."
+						},
+						{
+							"id": "4",
+							"uri": "http://localhost:3000/usuarios/10/pin",
+							"nodeName": "http:\/\/localhost:3000\/usuarios\/10\/pin ()({pinActual,pinNuevo})",
+							"method": "PUT",
+							"param": "",
+							"attack": "",
+							"evidence": "Access-Control-Allow-Origin: *",
+							"otherinfo": "La configuraci\u00F3n incorrecta de CORS en el servidor web permite solicitudes de lectura entre dominios de terceros arbitrarios, utilizando API no autenticadas en este dominio. Sin embargo, las implementaciones de los navegadores web no permiten que terceros arbitrarios lean la respuesta de las API autenticadas. Esto reduce un poco el riesgo. Esta configuraci\u00F3n err\u00F3nea podr\u00EDa ser utilizada por un atacante para acceder a datos que est\u00E1n disponibles de forma no autenticada, pero que utilizan alguna otra forma de seguridad, como la lista blanca de direcciones IP."
+						}
+					],
+					"count": "5",
+					"systemic": true,
+					"solution": "<p>Aseg\u00FArese de que los datos confidenciales no est\u00E9n disponibles de forma no autenticada (por ejemplo, mediante listas blancas de direcciones IP).</p><p>Configure el encabezado HTTP \"Access-Control-Allow-Origin\" a un conjunto m\u00E1s restrictivo de dominios, o elimine todos los encabezados CORS por completo, para permitir que el navegador web aplique la Pol\u00EDtica del Mismo Origen (SOP) de una manera m\u00E1s restrictiva.</p>",
+					"otherinfo": "<p>La configuraci\u00F3n incorrecta de CORS en el servidor web permite solicitudes de lectura entre dominios de terceros arbitrarios, utilizando API no autenticadas en este dominio. Sin embargo, las implementaciones de los navegadores web no permiten que terceros arbitrarios lean la respuesta de las API autenticadas. Esto reduce un poco el riesgo. Esta configuraci\u00F3n err\u00F3nea podr\u00EDa ser utilizada por un atacante para acceder a datos que est\u00E1n disponibles de forma no autenticada, pero que utilizan alguna otra forma de seguridad, como la lista blanca de direcciones IP.</p>",
+					"reference": "<p>https://vulncat.fortify.com/en/detail?category=HTML5&subcategory=Overly%20Permissive%20CORS%20Policy</p>",
+					"cweid": "264",
+					"wascid": "14",
+					"sourceid": "8"
+				},
+				{
+					"pluginid": "10037",
+					"alertRef": "10037",
+					"alert": "El servidor divulga informaci\u00F3n mediante un campo(s) de encabezado de respuesta HTTP ''''X-Powered-By''''",
+					"name": "El servidor divulga informaci\u00F3n mediante un campo(s) de encabezado de respuesta HTTP ''''X-Powered-By''''",
+					"riskcode": "1",
+					"confidence": "2",
+					"riskdesc": "Bajo (Media)",
+					"desc": "<p>El servidor de la web/aplicaci\u00F3n est\u00E1 divulgando informaci\u00F3n mediante uno o m\u00E1s encabezados de respuesta HTTP ''''X-Powered-By''''. El acceso a tal informaci\u00F3n podr\u00EDa facilitarle a los atacantes la identificaci\u00F3n de otros marcos/componentes de los que su aplicaci\u00F3n web depende y las vulnerabilidades a las que pueden estar sujetos tales componentes.</p>",
+					"instances":[ 
+						{
+							"id": "23",
+							"uri": "http://localhost:3000/usuarios/10",
+							"nodeName": "http:\/\/localhost:3000\/usuarios\/10",
+							"method": "DELETE",
+							"param": "",
+							"attack": "",
+							"evidence": "X-Powered-By: Express",
+							"otherinfo": ""
+						},
+						{
+							"id": "18",
+							"uri": "http://localhost:3000/reservas-cancha?desde=desde&hasta=hasta",
+							"nodeName": "http:\/\/localhost:3000\/reservas-cancha (desde,hasta)",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "X-Powered-By: Express",
+							"otherinfo": ""
+						},
+						{
+							"id": "14",
+							"uri": "http://localhost:3000/auth/logout",
+							"nodeName": "http:\/\/localhost:3000\/auth\/logout",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "X-Powered-By: Express",
+							"otherinfo": ""
+						},
+						{
+							"id": "20",
+							"uri": "http://localhost:3000/reservas-cancha",
+							"nodeName": "http:\/\/localhost:3000\/reservas-cancha ()({nombreCliente,deporte,fecha,hora,montoTotal,adelanto,duracionMinutos})",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "X-Powered-By: Express",
+							"otherinfo": ""
+						},
+						{
+							"id": "17",
+							"uri": "http://localhost:3000/reservas-cancha/10/cobrar-saldo",
+							"nodeName": "http:\/\/localhost:3000\/reservas-cancha\/10\/cobrar-saldo",
+							"method": "PUT",
+							"param": "",
+							"attack": "",
+							"evidence": "X-Powered-By: Express",
+							"otherinfo": ""
+						}
+					],
+					"count": "5",
+					"systemic": true,
+					"solution": "<p>Aseg\u00FArese de que su servidor web, servidor de aplicaciones, balanceador de carga, etc. est\u00E1 configurado para suprimir las cabeceras \"X-Powered-By\".</p>",
+					"otherinfo": "",
+					"reference": "<p>https://owasp.org/www-project-web-security-testing-guide/v42/4-Web_Application_Security_Testing/01-Information_Gathering/08-Fingerprint_Web_Application_Framework</p><p>https://www.troyhunt.com/shhh-dont-let-your-response-headers/</p>",
+					"cweid": "497",
+					"wascid": "13",
+					"sourceid": "8"
+				},
+				{
+					"pluginid": "10021",
+					"alertRef": "10021",
+					"alert": "Falta encabezado X-Content-Type-Options",
+					"name": "Falta encabezado X-Content-Type-Options",
+					"riskcode": "1",
+					"confidence": "2",
+					"riskdesc": "Bajo (Media)",
+					"desc": "<p>La cabecera Anti-MIME-Sniffing X-Content-Type-Options no se ha establecido en 'nosniff'. Esto permite que las versiones anteriores de Internet Explorer y Chrome realicen MIME-sniffing en el cuerpo de la respuesta, lo que puede provocar que el cuerpo d\u00E9 la respuesta se interprete y se muestre como un tipo de contenido distinto del tipo de contenido declarado. Las versiones actuales (principios de 2014) y heredadas de Firefox utilizar\u00E1n el tipo de contenido declarado (si se establece uno), en lugar de realizar MIME-sniffing.</p>",
+					"instances":[ 
+						{
+							"id": "21",
+							"uri": "http://localhost:3000/health",
+							"nodeName": "http:\/\/localhost:3000\/health",
+							"method": "GET",
+							"param": "x-content-type-options",
+							"attack": "",
+							"evidence": "",
+							"otherinfo": "Este problema a\u00FAn se aplica a las p\u00E1ginas de tipo error (401, 403, 500, etc.), ya que esas p\u00E1ginas a menudo se ven afectadas por problemas de inyecci\u00F3n, en cuyo caso a\u00FAn existe la preocupaci\u00F3n de que los navegadores husmeen las p\u00E1ginas lejos de su tipo de contenido real.\nEn el umbral \u00ABAlto\u00BB esta regla de an\u00E1lisis no alertar\u00E1 sobre respuestas de error del cliente o servidor."
+						},
+						{
+							"id": "13",
+							"uri": "http://localhost:3000/hello",
+							"nodeName": "http:\/\/localhost:3000\/hello",
+							"method": "GET",
+							"param": "x-content-type-options",
+							"attack": "",
+							"evidence": "",
+							"otherinfo": "Este problema a\u00FAn se aplica a las p\u00E1ginas de tipo error (401, 403, 500, etc.), ya que esas p\u00E1ginas a menudo se ven afectadas por problemas de inyecci\u00F3n, en cuyo caso a\u00FAn existe la preocupaci\u00F3n de que los navegadores husmeen las p\u00E1ginas lejos de su tipo de contenido real.\nEn el umbral \u00ABAlto\u00BB esta regla de an\u00E1lisis no alertar\u00E1 sobre respuestas de error del cliente o servidor."
+						},
+						{
+							"id": "12",
+							"uri": "http://localhost:3000/sumar?a=5&b=3",
+							"nodeName": "http:\/\/localhost:3000\/sumar (a,b)",
+							"method": "GET",
+							"param": "x-content-type-options",
+							"attack": "",
+							"evidence": "",
+							"otherinfo": "Este problema a\u00FAn se aplica a las p\u00E1ginas de tipo error (401, 403, 500, etc.), ya que esas p\u00E1ginas a menudo se ven afectadas por problemas de inyecci\u00F3n, en cuyo caso a\u00FAn existe la preocupaci\u00F3n de que los navegadores husmeen las p\u00E1ginas lejos de su tipo de contenido real.\nEn el umbral \u00ABAlto\u00BB esta regla de an\u00E1lisis no alertar\u00E1 sobre respuestas de error del cliente o servidor."
+						},
+						{
+							"id": "19",
+							"uri": "http://localhost:3000/auth/login",
+							"nodeName": "http:\/\/localhost:3000\/auth\/login ()({nombre,pin})",
+							"method": "POST",
+							"param": "x-content-type-options",
+							"attack": "",
+							"evidence": "",
+							"otherinfo": "Este problema a\u00FAn se aplica a las p\u00E1ginas de tipo error (401, 403, 500, etc.), ya que esas p\u00E1ginas a menudo se ven afectadas por problemas de inyecci\u00F3n, en cuyo caso a\u00FAn existe la preocupaci\u00F3n de que los navegadores husmeen las p\u00E1ginas lejos de su tipo de contenido real.\nEn el umbral \u00ABAlto\u00BB esta regla de an\u00E1lisis no alertar\u00E1 sobre respuestas de error del cliente o servidor."
+						}
+					],
+					"count": "4",
+					"systemic": false,
+					"solution": "<p>Aseg\u00FArese de que la aplicaci\u00F3n/servidor web establece el encabezado Content-Type adecuadamente, y que establece el encabezado X-Content-Type-Options a 'nosniff' para todas las p\u00E1ginas web.</p><p>Si es posible, aseg\u00FArese de que el usuario final utiliza un navegador web moderno y compatible con los est\u00E1ndares que no realiza MIME-sniffing en absoluto, o que puede ser dirigido por la aplicaci\u00F3n web/servidor web para que no realice MIME-sniffing.</p>",
+					"otherinfo": "<p>Este problema a\u00FAn se aplica a las p\u00E1ginas de tipo error (401, 403, 500, etc.), ya que esas p\u00E1ginas a menudo se ven afectadas por problemas de inyecci\u00F3n, en cuyo caso a\u00FAn existe la preocupaci\u00F3n de que los navegadores husmeen las p\u00E1ginas lejos de su tipo de contenido real.</p><p>En el umbral \u00ABAlto\u00BB esta regla de an\u00E1lisis no alertar\u00E1 sobre respuestas de error del cliente o servidor.</p>",
+					"reference": "<p>https://learn.microsoft.com/en-us/previous-versions/windows/internet-explorer/ie-developer/compatibility/gg622941(v=vs.85)</p><p>https://owasp.org/www-community/Security_Headers</p>",
+					"cweid": "693",
+					"wascid": "15",
+					"sourceid": "1"
+				},
+				{
+					"pluginid": "10112",
+					"alertRef": "10112",
+					"alert": "Respuesta de Gesti\u00F3n de Sesi\u00F3n Identificada",
+					"name": "Respuesta de Gesti\u00F3n de Sesi\u00F3n Identificada",
+					"riskcode": "0",
+					"confidence": "2",
+					"riskdesc": "Informativo (Media)",
+					"desc": "<p>Se ha identificado que la respuesta dada contiene un token de gesti\u00F3n de sesi\u00F3n. El campo 'Other Info' contiene un conjunto de tokens de cabecera que pueden utilizarse en el m\u00E9todo Header Based Session Management (gesti\u00F3n de sesi\u00F3n basado en cabecera). Si la petici\u00F3n se encuentra en un contexto que tiene un m\u00E9todo Session Management establecido en \"Auto-Detect\", esta regla cambiar\u00E1 la gesti\u00F3n de sesi\u00F3n para utilizar los tokens identificados.</p>",
+					"instances":[ 
+						{
+							"id": "32",
+							"uri": "http://localhost:3000/auth/login",
+							"nodeName": "http:\/\/localhost:3000\/auth\/login ()({nombre,pin})",
+							"method": "POST",
+							"param": "token",
+							"attack": "",
+							"evidence": "token",
+							"otherinfo": "json:token"
+						}
+					],
+					"count": "1",
+					"systemic": false,
+					"solution": "<p>Se trata de una alerta informativa y no de una vulnerabilidad, por lo que no hay nada que corregir.</p>",
+					"otherinfo": "<p>json:token</p>",
+					"reference": "<p>https://www.zaproxy.org/docs/desktop/addons/authentication-helper/session-mgmt-id/</p>",
+					"cweid": "-1",
+					"wascid": "-1",
+					"sourceid": "5"
+				}
+			]
+		}
+	],
+	"sequences":[
+	]
+
+}

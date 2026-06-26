@@ -1,0 +1,27 @@
+ID,Modulo,Caso,Prioridad,Tipo,Ejecucion,Resultado,Fecha,Observaciones,Evidencia
+CP-001,Login,Login trabajador valido,P0,Funcional,Manual,Pendiente,,,capturas/CP-001.png
+CP-002,Login,Login admin valido,P0,Funcional,Manual,Pendiente,,,capturas/CP-002.png
+CP-003,Login,Credenciales incorrectas,P0,Funcional,Manual,Pendiente,,,
+CP-004,Login,PIN vacio o incompleto,P1,Funcional,Manual,Pendiente,,,
+CP-005,Auth,Sesion duplicada,P1,Integracion,Manual,Pendiente,,,
+CP-006,Config,Health API,P0,Integracion,Manual+Postman,Pendiente,,,capturas/CP-006.png
+CP-007,Cancha,Listar reservas dia,P0,Funcional,Manual,Pendiente,,,capturas/CP-007.png
+CP-008,Cancha,Crear reserva valida,P0,Funcional,Manual,Pendiente,,,capturas/CP-008.png
+CP-009,Cancha,Fecha u hora pasada,P1,Funcional,Manual,Pendiente,,,
+CP-010,Salones,Listar reservas,P0,Funcional,Manual,Pendiente,,,
+CP-011,Salones,Crear reserva valida,P0,Funcional,Manual,Pendiente,,,
+CP-012,Reportes,Generar reporte periodo,P1,Funcional,Manual,Pendiente,,,
+CP-013,Perfil,Cambiar PIN,P1,Funcional,Manual,Pendiente,,,
+CP-014,Regresion,Smoke post-cambio,P1,Regresion,Manual,Pendiente,,,
+CP-015,Cancha,Calendario colores por dia,P0,Funcional,Manual,Pendiente,,,capturas/CP-015.png
+CP-016,Cancha,Calendario cambiar mes,P1,Funcional,Manual,Pendiente,,,
+CP-017,Cancha,Barra semana flechas,P1,Funcional,Manual,Pendiente,,,
+CP-018,Cancha,Turno largo una fila,P0,Funcional,Manual,Pendiente,,,
+CP-019,Cancha,Detalle turno largo,P1,Funcional,Manual,Pendiente,,,
+CP-020,Cancha,Otra hora inicio,P0,Funcional,Manual,Pendiente,,,
+CP-021,Cancha,Duracion media hora final,P0,Funcional,Manual,Pendiente,,,
+CP-022,Cancha,Volver a fecha hoy,P2,Funcional,Manual,Pendiente,,,
+AUTO-API,Server,npm run test:ci,P0,Automatizado,Automatizado,Pasó,2026-05-30,4/4 tests calcularEstadoCancha OK,capturas/npm-test-ci.png
+AUTO-POSTMAN,API,Coleccion Postman,P0,Integracion,Automatizado,Pendiente,,,
+AUTO-ACTIONS,CI,GitHub API Tests,P0,CI,Automatizado,Pendiente,,,capturas/github-actions.png
+AUTO-GRADLE,Android,testDebugUnitTest,P1,Unitarias,Automatizado,Pendiente,,,

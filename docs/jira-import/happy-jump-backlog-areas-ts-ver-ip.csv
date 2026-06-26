@@ -1,0 +1,30 @@
+Summary,Issue Type,Description,Priority,Labels,Epic Name,Sprint,Area
+Autenticación y seguridad,Epic,Login PIN sesión única. Area TS,High,"happy-jump,area-TS,cmmi-reqm",,,
+Reservas de cancha,Epic,CRUD cancha deportiva. Area TS,High,"happy-jump,area-TS,cmmi-reqm",,,
+Reservas de salones,Epic,Eventos y salones. Area TS,High,"happy-jump,area-TS,cmmi-reqm",,,
+Reportes administrador,Epic,Ingresos y cancelaciones. Area TS,Medium,"happy-jump,area-TS,cmmi-reqm",,,
+App Android UI,Epic,Jetpack Compose pantallas. Area TS,High,"happy-jump,area-TS,cmmi-ver",,,
+Calidad CI/CD,Epic,Pipeline calidad. Area VER+IP,Medium,"happy-jump,area-VER,area-IP,cmmi-ppqa",,,
+Gestión Scrum y CMMI,Epic,Ceremonias Jira evidencias. Area IP,Medium,"happy-jump,area-IP,cmmi-pp,cmmi-pmc",,,
+Login nombre y PIN,Story,POST /auth/login JWT. CA: sesión única,Highest,"area-TS,cmmi-reqm",Autenticación y seguridad,Sprint 1,TS
+Sesión única dispositivo,Story,active_token un dispositivo,High,"area-TS,cmmi-reqm",Autenticación y seguridad,Sprint 2,TS
+Listar y crear reserva cancha,Story,GET POST reservas-cancha,Highest,"area-TS,cmmi-ver",Reservas de cancha,Sprint 1,TS
+Cancelar y cobrar cancha,Story,PUT cobrar y cancelar,Medium,"area-TS",Reservas de cancha,Sprint 2,TS
+Reservas salones trabajador,Story,POST salones trabajador,Highest,"area-TS,cmmi-reqm",Reservas de salones,Sprint 2,TS
+Reportes admin periodo,Story,GET /reportes,Highest,"area-TS",Reportes administrador,Sprint 2,TS
+Pantallas Compose principales,Story,Login cancha salones perfil,High,"area-TS",App Android UI,Sprint 1,TS
+Pruebas unitarias API,Task,npm run test:ci server/test,Highest,"area-VER,cmmi-ppqa",Calidad CI/CD,Sprint 2,VER
+Pruebas unitarias Android,Task,Gradle testDebugUnitTest JaCoCo,High,"area-VER,cmmi-ppqa",Calidad CI/CD,Sprint 2,VER
+Postman integración API,Task,Collection Runner docs/postman,Highest,"area-VER",Calidad CI/CD,Sprint 2,VER
+Pruebas k6 rendimiento,Task,load smoke stress k6/,Medium,"area-VER,cmmi-ma",Calidad CI/CD,Sprint 3,VER
+Swagger OpenAPI 100%,Task,openapi.json swagger-ui todos endpoints,High,"area-VER,area-TS",Calidad CI/CD,Sprint 3,VER
+SonarCloud y cobertura,Task,GitHub Actions jacoco sonar,High,"area-VER,cmmi-ppqa",Calidad CI/CD,Sprint 3,VER
+Snyk dependencias,Task,workflow snyk.yml,Medium,"area-VER",Calidad CI/CD,Sprint 3,VER
+Configurar Jira Scrum TS VER IP,Task,Proyecto HJ 3 filtros area-TS VER IP,High,"area-IP,cmmi-pp",Gestión Scrum y CMMI,Sprint 1,IP
+Sprint Planning documentado,Task,Acta + captura tablero,Medium,"area-IP,cmmi-pp",Gestión Scrum y CMMI,Sprint 1,IP
+Daily Scrum bitácora,Task,docs/scrum/daily-log.md,Medium,"area-IP,cmmi-pmc",Gestión Scrum y CMMI,Sprint 1-3,IP
+Sprint Review y demo,Task,Demo app Swagger fotos,Medium,"area-IP,cmmi-ver",Gestión Scrum y CMMI,Sprint 3,IP
+Retrospectiva sprint,Task,plantilla retrospectiva,Medium,"area-IP,cmmi-pmc",Gestión Scrum y CMMI,Sprint 3,IP
+Documento CMMI+Scrum,Task,SCRUM_CMMI_HAPPY_JUMP.md entrega,High,"area-IP",Gestión Scrum y CMMI,Sprint 3,IP
+Jenkins pipeline Docker,Task,Jenkinsfile compose salon,Medium,"area-IP,area-TS",Calidad CI/CD,Sprint 3,IP
+GitHub 2 reviews aprobación,Task,PR con review aprobada equipo,High,"area-IP,cmmi-cm",Gestión Scrum y CMMI,Sprint 3,IP

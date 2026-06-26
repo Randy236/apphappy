@@ -1,0 +1,27 @@
+
+
+Repositorio: https://github.com/Randy236/apphappy
+
+La API valida los parámetros de entrada antes de procesarlos:
+- Nombre de usuario: solo letras, máx. 100 caracteres, sin números
+- PIN: solo números, mín. 4 y máx. 5 dígitos
+- Reservas: montos ≥ 0, fechas en formato YYYY-MM-DD, deporte/salón válidos
+- Si los datos son incorrectos, la API responde HTTP 400
+
+Colecciones Postman:
+  docs/postman/HappyJump-Validaciones.postman_collection.json
+  docs/postman/HappyJump-Seguridad.postman_collection.json
+
+Scripts Python (generan informe Word automático):
+
+  cd D:\apphappy-full\scripts\postman_reports
+  pip install -r requirements.txt
+
+  python run_validaciones.py   → reportes\INFORME_VALIDACION_PARAMETROS.docx
+  python run_seguridad.py      → reportes\INFORME_PRUEBAS_SEGURIDAD.docx
+
+Antes de ejecutar (API + MySQL):
+  cd D:\apphappy-full\server
+  npm start
+
+Validaciones en código: server/src/domain/entradaValidacion.js

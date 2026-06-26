@@ -1,0 +1,99 @@
+ENTREGABLE 8 — Pruebas de seguridad con OWASP ZAP
+=================================================
+
+*** FORMATO QUE PIDE EL PROFESOR ***
+Informe HTML "Reporte de Seguridad DAST" con ZAP Desktop 2.17.
+Guia detallada: COMO_EJECUTAR_ZAP_DESKTOP.txt
+
+
+PASO 1 — Encender MySQL (Laragon) y la API
+------------------------------------------
+  Laragon → Start All
+
+  cd D:\apphappy-full\server
+  npm install
+  npm start
+
+Debe aparecer: Happy Jump API http://0.0.0.0:3000
+
+
+PASO 2 — (Si hay sesión bloqueada) Liberar logins
+-------------------------------------------------
+  cd D:\apphappy-full\server
+  node scripts/clear-sessions-for-k6.mjs
+
+Usuarios: Admin / Rosisela — PIN 1234
+
+
+PASO 3 — ZAP Desktop 2.17 (RECOMENDADO — igual que el salon)
+------------------------------------------------------------
+  1) Descarga: https://www.zaproxy.org/download/  (version 2.17)
+  2) Import → OpenAPI → D:\apphappy-full\server\openapi.json
+  3) Target URL: http://localhost:3000
+  4) Automated Scan → esperar fin
+  5) Report → Generate Report → plantilla "DAST Security Report"
+  6) Guardar:
+       entregableunidad\entregable-08\ZAP-Report-HappyJump.html
+
+  Detalle paso a paso: COMO_EJECUTAR_ZAP_DESKTOP.txt
+
+
+PASO 4 — Alternativa Docker (si no instalas ZAP Desktop)
+------------------------------------
+  cd D:\apphappy-full
+  .\scripts\run-zap-seguridad.ps1
+
+Genera en carpeta zap\:
+  zap-report.html   ← captura para el profesor
+  zap-report.json
+  zap-report.md
+
+
+PASO 5 — Informe Word + Excel (automático)
+------------------------------------------
+  cd D:\apphappy-full
+  .\scripts\generar-informe-seguridad-zap.ps1
+
+O manual:
+  cd D:\apphappy-full\scripts\zap_reports
+  pip install -r requirements.txt
+  python run_informe_zap.py
+
+Archivos en scripts\zap_reports\reportes\:
+  INFORME_PRUEBAS_SEGURIDAD_ZAP.docx
+  RESULTADOS_SEGURIDAD_ZAP.xlsx
+
+
+PASO 6 — Copiar al entregable
+-----------------------------
+Carpeta: entregableunidad\entregable-08\
+
+  INFORME_PRUEBAS_SEGURIDAD_ZAP.docx
+  RESULTADOS_SEGURIDAD_ZAP.xlsx
+  ZAP-Report-HappyJump.html   ← reporte DAST del profesor (OBLIGATORIO)
+
+
+PASO 7 — Qué valida ZAP + Postman
+---------------------------------
+ZAP (dinámico):
+  - Endpoints de la API según OpenAPI
+  - Cabeceras HTTP, cookies, respuestas inseguras
+  - Inyecciones básicas en parámetros
+
+Postman SEC (dinámico):
+  SEC-001 Sin token → 401
+  SEC-002 Token inválido → 401
+  SEC-006 Trabajador sin /reportes → 403
+  SEC-008 Admin con /reportes → 200
+  (y más casos en docs\CASOS_SEGURIDAD.csv)
+
+
+PASO 8 — Texto corto para Word del profesor
+-------------------------------------------
+  Se ejecutaron pruebas de seguridad con OWASP ZAP sobre la API REST
+  usando la especificación OpenAPI, complementadas con casos Postman
+  de autenticación y autorización. Los hallazgos se documentan en el
+  informe; los casos SEC críticos quedaron SUPERADOS.
+
+
+Repositorio: https://github.com/Randy236/apphappy

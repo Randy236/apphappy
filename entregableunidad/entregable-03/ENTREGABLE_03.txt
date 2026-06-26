@@ -1,0 +1,18 @@
+
+
+SonarCloud — Cobertura de pruebas unitarias >= 80%
+
+Dashboard:
+  https://sonarcloud.io/project/overview?id=Randy236_apphappy
+
+El proyecto publica el informe JaCoCo de las pruebas unitarias Android (JUnit).
+La cobertura se mide sobre la lógica de negocio en app/.../ui/util/ (reglas de
+horarios, cancha, montos), que tiene pruebas JVM. Las pantallas Compose no entran
+en el cálculo porque requieren pruebas instrumentadas, no unitarias.
+
+Requisito del profesor: captura de pantalla del dashboard con Coverage >= 80%.
+
+Repositorio GitHub:
+  https://github.com/Randy236/apphappy
+
+Comandos detallados: ver COMO_EJECUTAR.txt en esta carpeta.

@@ -1,0 +1,23 @@
+# Solo Jenkins — mas ligero y rapido para entrar a http://localhost:8081
+# Uso: docker compose -f docker-compose.jenkins-only.yml up -d
+
+name: happyjump-jenkins
+
+services:
+  jenkins:
+    image: jenkins/jenkins:lts-jdk17
+    container_name: happyjump-jenkins
+    ports:
+      - "8081:8080"
+      - "50000:50000"
+    volumes:
+      - ./data/jenkins_home:/var/jenkins_home
+    environment:
+      JAVA_OPTS: "-Djenkins.install.runSetupWizard=true -Xmx1024m"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/login || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 120s

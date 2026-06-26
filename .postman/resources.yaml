@@ -7,5 +7,6 @@ localResources:
     - ..\docs\postman\HappyJump-API.postman_collection.json
   environments:
     - ..\docs\postman\HappyJump-local.postman_environment.json
+    - ..\docs\postman\HappyJump-prod.postman_environment.json
   specs:
     - ..\server\openapi.json

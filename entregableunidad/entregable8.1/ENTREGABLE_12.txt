@@ -1,0 +1,20 @@
+ENTREGABLE 12 — Pruebas de Rendimiento (k6 + Informe Word)
+
+Contenido de la carpeta:
+  INFORME_PRUEBAS_RENDIMIENTO.docx   ← Informe principal (Word)
+  METRICAS_RENDIMIENTO.xlsx          ← Métricas resumidas
+  performance-latest.txt             ← Salida completa de k6
+  performance-summary.json           ← Resumen JSON k6
+  servidor-info.json                 ← Características del servidor
+
+Generar todo:
+  cd D:\apphappy-full
+  .\scripts\generar-informe-rendimiento.ps1
+
+Requisitos:
+  - API encendida (cd server && npm start)
+  - MySQL / Laragon activo
+  - k6 instalado (winget install GrafanaLabs.k6)
+  - Python 3 con pip
+
+Repositorio: https://github.com/Randy236/apphappy

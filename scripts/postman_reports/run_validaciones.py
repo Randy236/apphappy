@@ -6,7 +6,7 @@ Uso:
   pip install -r requirements.txt
   python run_validaciones.py
 
-Requisito: API en http://localhost:3000 (cd server && npm start)
+Requisito: API en https://happyjump.sorbits.site (producción en la nube)
 """
 
 from pathlib import Path
@@ -19,7 +19,7 @@ from postman_lib import ejecutar_coleccion, generar_word, imprimir_resumen
 
 COLECCION = ROOT / "docs" / "postman" / "HappyJump-Validaciones.postman_collection.json"
 SALIDA = Path(__file__).resolve().parent / "reportes" / "INFORME_VALIDACION_PARAMETROS.docx"
-BASE_URL = "http://localhost:3000"
+BASE_URL = "https://happyjump.sorbits.site"
 
 
 def main() -> int:

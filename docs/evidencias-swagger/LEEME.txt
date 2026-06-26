@@ -1,0 +1,10 @@
+Item 4 — Swagger 100%
+
+Capturas:
+  01-swagger-ui-todos-endpoints.png
+  02-verify-100-porciento.png
+  03-login-execute.png
+  04-endpoint-protegido-200.png
+  05-openapi-en-github.png
+
+Guia: docs/GUIA_ITEM4_SWAGGER_100.md

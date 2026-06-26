@@ -1,0 +1,16 @@
+
+
+Informe SonarQube — Nivel A (bugs y code smells superados)
+Excel + Word generados con JAR
+
+Dashboard:
+  https://sonarcloud.io/project/overview?id=Randy236_apphappy
+
+El JAR consulta la API de SonarCloud y genera:
+  METRICAS_SONAR_HAPPY_JUMP.xlsx
+  INFORME_SONAR_HAPPY_JUMP.docx
+
+Comandos: ver COMO_EJECUTAR.txt
+
+Repositorio:
+  https://github.com/Randy236/apphappy

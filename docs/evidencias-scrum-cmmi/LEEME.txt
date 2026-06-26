@@ -1,0 +1,11 @@
+Capturas para item 2 — CMMI + Scrum + Jira (TS, VER, IP)
+
+01-backlog.png
+02-board.png
+03-area-TS.png
+04-area-VER.png
+05-area-IP.png
+06-sprint-burndown.png
+07-issue-done.png
+
+Informe: INFORME_SCRUM_CMMI_HAPPY_JUMP.pdf (desde SCRUM_CMMI_HAPPY_JUMP.md)

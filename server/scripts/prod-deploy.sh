@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-# Actualiza la API en el servidor de producciÛn: git pull + npm ci + reinicio.
+# Actualiza la API en el servidor de producciùn: git pull + npm ci + reinicio.
 # Se invoca desde POST /internal/deploy (webhook) o manualmente en el servidor.
 set -eu
 

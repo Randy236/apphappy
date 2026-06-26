@@ -1,0 +1,10 @@
+Item 3 — GitHub colaborativo (2+ reviews Approved)
+
+Capturas:
+  01-lista-prs.png
+  02-pr-dos-approvals.png
+  03-files-changed.png
+  04-contributors.png
+  05-collaborators.png
+
+Guia: docs/GUIA_ITEM3_GITHUB_REVIEWS_COLABORATIVO.md

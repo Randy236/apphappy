@@ -1,0 +1,19 @@
+ID,Categoria,Caso,Herramienta,Ejecucion,Resultado,Fecha,Observaciones,Evidencia
+SEC-001,Autenticacion,Acceso sin token,Postman,Manual,Pendiente,,,capturas/SEC-001.png
+SEC-002,Autenticacion,Token invalido,Postman,Manual,Pendiente,,,
+SEC-003,Autenticacion,Credenciales incorrectas,Postman,Manual,Pendiente,,,
+SEC-004,Autenticacion,Sesion duplicada,Postman,Manual,Pendiente,,,
+SEC-005,Autenticacion,Logout invalida sesion,Postman,Manual,Pendiente,,,
+SEC-006,Autorizacion,Trabajador sin reportes,Postman,Manual,Pendiente,,,capturas/SEC-006.png
+SEC-007,Autorizacion,PIN ajeno bloqueado,Postman,Manual,Pendiente,,,
+SEC-008,Autorizacion,Admin reportes OK,Postman,Manual,Pendiente,,,
+SEC-009,Datos,PIN bcrypt,MySQL,Revision,Pendiente,,,capturas/SEC-009-pin-hash.png
+SEC-010,Datos,SQL injection login,Postman,Manual,Pendiente,,,
+SEC-011,Datos,Parametros invalidos,Postman,Manual,Pendiente,,,
+SEC-012,Config movil,Cleartext HTTP,Revision codigo,Revision,Pendiente,,,capturas/SEC-012-network-config.png
+SEC-013,Dependencias,Snyk Gradle,Snyk/Actions,Automatizada,Pendiente,,,capturas/snyk-github-actions.png
+SEC-014,Analisis estatico,Sonar Security,SonarCloud,Automatizada,Pendiente,,,capturas/sonar-security.png
+SEC-015,Dependencias,npm audit,Terminal,Manual,Pendiente,,3 moderate qs via express — documentar en informe,
+SEC-016,Transporte,Health publico,Postman,Manual,Pendiente,,Riesgo aceptado dev,
+SEC-017,Autenticacion,PIN minimo,Postman,Manual,Pendiente,,,
+SEC-018,CI,Snyk workflow,GitHub Actions,Automatizada,Pendiente,,,

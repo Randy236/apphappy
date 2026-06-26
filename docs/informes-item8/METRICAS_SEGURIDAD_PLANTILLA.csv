@@ -1,0 +1,16 @@
+Herramienta,Metrica,Valor,fecha,Notas
+SonarCloud,Quality Gate,,,
+SonarCloud,Vulnerabilidades,,,
+SonarCloud,Security Hotspots,,,
+SonarCloud,Hotspots revisados (%),,,
+Snyk,Vulnerabilidades High,,,
+Snyk,Vulnerabilidades Medium,,,
+Snyk,Vulnerabilidades Low,,,
+npm audit (server),Critical,,,
+npm audit (server),High,,,
+npm audit (server),Moderate,3,2026-05-29,qs via express/body-parser — ver GHSA-q8mj-m7cp-5q26
+npm audit (server),Low,,,
+Pruebas dinamicas SEC,Total casos,18,,
+Pruebas dinamicas SEC,Pasaron,,,
+Pruebas dinamicas SEC,Fallaron,,,
+Pruebas dinamicas SEC,Pendientes,,,

@@ -1,0 +1,14 @@
+﻿{
+    "sistema_operativo":  "Windows",
+    "k6_version":  "k6.exe v2.0.0 (commit/8c3be52cc1, go1.26.3, windows/amd64)",
+    "hostname":  "LAPTOP-DO3JPKG7",
+    "base_url":  "http://localhost:3000",
+    "procesador":  "AMD Ryzen 5 5500U with Radeon Graphics         ",
+    "nucleos":  "12",
+    "framework_api":  "Node.js + Express",
+    "puerto_api":  "3000",
+    "node_version":  "v24.14.0",
+    "arquitectura":  "Cliente Android + API REST monolitica + MySQL",
+    "ram_gb":  "5.9",
+    "motor_bd":  "MySQL 8 (Laragon)"
+}

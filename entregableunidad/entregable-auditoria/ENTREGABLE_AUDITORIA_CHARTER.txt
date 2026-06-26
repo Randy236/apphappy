@@ -1,0 +1,31 @@
+ENTREGABLE — Project Charter Auditoría SDLC Happy Jump
+======================================================
+
+Archivos principales:
+  PROJECT_CHARTER_AUDITORIA_SDLC_HAPPY_JUMP.docx
+  CHECKLIST_SDLC_AUDIT_HAPPY_JUMP.docx      ← Checklist SDLC completo
+  CHECKLIST_SDLC_AUDIT_HAPPY_JUMP.xlsx
+
+Generar Project Charter:
+  .\scripts\generar-project-charter-auditoria.ps1
+
+Generar Checklist SDLC:
+  .\scripts\generar-checklist-sdlc.ps1
+
+Completar en Word antes de entregar:
+  - Nombre del grupo
+  - Integrantes (nombres y códigos)
+  - Auditor líder
+  - Equipo auditor
+  - Firmas en sección 18
+
+Basado en plantilla del profesor (Ing. Rubén Roque Sucari)
+adaptado al proyecto Happy Jump:
+  - Android Kotlin + API Node.js + MySQL
+  - Scrum + CMMI Nivel 2
+  - Evidencias entregable-01 … entregable-12
+
+Complemento:
+  SCRUM_CMMI_HAPPY_JUMP.md (copiado como referencia)
+
+Código documento: AUD-SDLC-HAPPY-JUMP-2026-001

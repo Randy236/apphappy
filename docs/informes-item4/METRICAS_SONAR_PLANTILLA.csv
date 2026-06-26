@@ -1,0 +1,16 @@
+Métrica,Valor,Fecha,Fuente,Notas
+Quality Gate,,2026-05-28,SonarCloud Overview,Pasó / No pasó
+Bugs,,2026-05-28,SonarCloud Reliability,
+Vulnerabilidades,,2026-05-28,SonarCloud Security,
+Security Hotspots,,2026-05-28,SonarCloud Security,Revisados / pendientes
+Code Smells,,2026-05-28,SonarCloud Maintainability,
+Cobertura líneas (%),5.23,2026-05-28,JaCoCo local / SonarCloud,Si Sonar dice No data usar JaCoCo
+Duplicación (%),,2026-05-28,SonarCloud Duplications,
+Tests unitarios Android ejecutados,,2026-05-28,Gradle testDebugUnitTest,~25+ tests
+Tests unitarios API Node,,2026-05-28,npm run test:ci,4 tests
+Líneas cubiertas JaCoCo,168,2026-05-28,printJacocoTotals,
+Líneas no cubiertas JaCoCo,3047,2026-05-28,printJacocoTotals,
+Instrucciones cubiertas,1292,2026-05-28,printJacocoTotals,
+Instrucciones no cubiertas,31918,2026-05-28,printJacocoTotals,
+Repositorio GitHub,https://github.com/Randy236/apphappy,2026-05-28,Enlace público,
+Project Key SonarCloud,Randy236_apphappy,2026-05-28,sonar-project.properties,

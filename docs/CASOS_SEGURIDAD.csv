@@ -1,0 +1,19 @@
+ID,Categoria,Nombre del caso,Herramienta,Precondiciones,Pasos,Resultado esperado,Severidad si falla,REQ vinculado,Tipo
+SEC-001,Autenticacion,Acceso sin token a recurso protegido,Postman/cURL,API activa.,GET /reservas-cancha sin header Authorization.,HTTP 401 con mensaje de no autorizado.,Alta,REQ-001,Dinamica
+SEC-002,Autenticacion,Token JWT invalido o manipulado,Postman,API activa.,GET /reservas-cancha con Bearer token falso o alterado.,HTTP 401 Token invalido.,Alta,REQ-001,Dinamica
+SEC-003,Autenticacion,Credenciales incorrectas en login,Postman/App,API activa.,POST /auth/login con PIN o nombre incorrecto.,HTTP 401 mensaje generico sin revelar cual campo fallo.,Media,REQ-001,Dinamica
+SEC-004,Autenticacion,Sesion duplicada segundo dispositivo,Postman/App,Usuario ya logueado con active_token.,Segundo POST /auth/login mismo usuario.,HTTP 409 sesion activa en otro dispositivo.,Media,REQ-004,Dinamica
+SEC-005,Autenticacion,Logout invalida sesion,Postman,Token valido de login previo.,POST /auth/logout luego reutilizar mismo token en GET protegido.,Tras logout token rechazado 401.,Alta,REQ-005,Dinamica
+SEC-006,Autorizacion,Trabajador no accede a reportes admin,Postman,Token de usuario trabajador (Rosisela).,GET /reportes con Bearer trabajador.,HTTP 403 Solo administrador.,Alta,REQ-002 REQ-003,Dinamica
+SEC-007,Autorizacion,Trabajador no cambia PIN ajeno,Postman,Token trabajador; otro id usuario.,PUT /usuarios/{id_otro}/pin con pinNuevo.,HTTP 403 No permitido.,Alta,REQ-011,Dinamica
+SEC-008,Autorizacion,Admin accede a reportes,Postman,Token administrador.,GET /reportes?desde=...&hasta=...,HTTP 200 con datos o lista vacia.,Media,REQ-002,Dinamica
+SEC-009,Datos,PIN almacenado con hash bcrypt,Revision BD,MySQL con usuarios seed.,SELECT pin FROM usuarios LIMIT 1; revisar formato.,Valor no es texto plano; prefijo bcrypt $2.,Critica,REQ-001,Revision
+SEC-010,Datos,Intento inyeccion SQL en login,Postman,API activa.,POST /auth/login nombre con payload ' OR 1=1 -- y PIN cualquiera.,HTTP 401 sin error 500 ni bypass de login.,Alta,REQ-012,Dinamica
+SEC-011,Datos,Parametros invalidos sin crash servidor,Postman,API activa.,POST reserva con fechas invalidas o campos vacios.,HTTP 4xx controlado sin stack trace al cliente.,Media,REQ-012,Dinamica
+SEC-012,Config movil,Cleartext HTTP restringido en release,Revision codigo,Archivo network_security_config.xml.,Revisar domain-config y base-config.,Cleartext solo localhost/emulador; base-config false.,Media,REQ-006,Revision
+SEC-013,Dependencias,Escaneo Snyk Gradle,GitHub Actions / Snyk CLI,SNYK_TOKEN configurado.,Ejecutar workflow snyk.yml o snyk test --all-projects.,Informe sin vulnerabilidades High/Critical sin documentar; medium revisadas.,Alta,REQ-012,Estatica
+SEC-014,Analisis estatico,Vulnerabilidades SonarCloud,SonarCloud,SONAR_TOKEN y ultimo analisis.,Revisar pestana Security y Quality Gate.,Vulnerabilidades documentadas o corregidas; hotspots revisados.,Alta,REQ-012,Estatica
+SEC-015,Dependencias,npm audit server,Terminal,server/ con node_modules.,cd server && npm audit.,Vulnerabilidades listadas y decision documentada (fix o excepcion).,Media,REQ-012,Estatica
+SEC-016,Transporte,Health publico sin auth aceptado,Postman,API activa.,GET /health sin token.,HTTP 200 ok true (riesgo aceptado entorno dev).,Baja,REQ-006,Dinamica
+SEC-017,Autenticacion,PIN minimo al cambiar,Postman,Token valido propio usuario.,PUT /usuarios/{id}/pin con pinNuevo de 3 digitos.,HTTP 400 PIN invalido min 4 digitos.,Media,REQ-011,Dinamica
+SEC-018,CI,Workflow Snyk en GitHub,GitHub Actions,Repo publico/privado con secretos.,Actions -> Snyk Security ultima ejecucion.,Job ejecutado; log muestra escaneo Gradle (aunque continue-on-error).,Media,REQ-012,Automatizada

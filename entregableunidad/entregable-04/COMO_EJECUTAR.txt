@@ -1,0 +1,49 @@
+ENTREGABLE 4 — Informe SonarQube (Nivel A) + Excel + Word + JAR
+================================================================
+
+PASO 1 — Compilar el JAR
+------------------------
+  cd D:\apphappy-full
+  .\scripts\generar-informe-sonar.ps1
+
+Se crea:
+  entregableunidad\entregable-04\sonar-informe.jar
+
+
+PASO 2 — Token SonarCloud (mismo del entregable 3)
+--------------------------------------------------
+  $env:SONAR_TOKEN = "TU_TOKEN"
+
+
+PASO 3 — Generar Excel y Word
+-----------------------------
+  java -jar entregableunidad\entregable-04\sonar-informe.jar --out entregableunidad\entregable-04
+
+Archivos generados:
+  METRICAS_SONAR_HAPPY_JUMP.xlsx   (métricas + tabla bugs/code smells)
+  INFORME_SONAR_HAPPY_JUMP.docx    (informe formal Nivel A)
+
+
+PASO 4 — Qué incluye el informe
+-------------------------------
+- Métricas: bugs, code smells, cobertura, duplicación
+- Nivel A en confiabilidad (0 bugs) y mantenibilidad
+- Tabla de hallazgos con estado SUPERADO y acción correctiva
+- Cobertura >= 80% (entregable 3)
+
+
+PASO 5 — (Opcional) Actualizar Sonar antes del informe
+------------------------------------------------------
+Si cambiaste código, vuelve a publicar:
+  .\scripts\publicar-sonarcloud.ps1
+
+Luego ejecuta otra vez el JAR (Paso 3).
+
+
+PASO 6 — Adjuntar al entregable
+-------------------------------
+Copia a entregable-04:
+  sonar-informe.jar
+  METRICAS_SONAR_HAPPY_JUMP.xlsx
+  INFORME_SONAR_HAPPY_JUMP.docx
+  Captura del dashboard SonarCloud (Coverage >= 80%)

@@ -1,0 +1,26 @@
+
+
+Repositorio GitHub:
+https://github.com/Randy236/apphappy
+
+El código de la app Android está en la carpeta app/ y la API en server/.
+Las pruebas unitarias de la API están en server/test/ y las de Android en app/src/test/.
+Para el reporte usamos Allure, que junta los resultados en HTML.
+
+Comandos para ejecutar las pruebas:
+
+1) Pruebas API
+cd D:\apphappy-full\server
+npm install
+npm run test:ci
+
+2) Pruebas Android
+cd D:\apphappy-full
+.\gradlew.bat :app:testDebugUnitTest
+
+3) Reporte Allure (API + Android)
+cd D:\apphappy-full
+.\scripts\run-allure-report.ps1
+.\gradlew.bat :app:allureServe
+
+Se abre el reporte en el navegador. Adjuntar captura si lo pide el profesor.

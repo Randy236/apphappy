@@ -1,0 +1,62 @@
+ENTREGABLE 3 — SonarCloud cobertura >= 80%
+==========================================
+
+PASO 1 — Verificar cobertura local (opcional, sin subir a internet)
+---------------------------------------------------------------------
+Abre PowerShell:
+
+  cd D:\apphappy-full
+  .\scripts\run-coverage-local.ps1
+
+Al final debe aparecer algo como:
+  Paquete ui.util (alcance SonarCloud): 82% o más
+
+También puedes abrir el HTML JaCoCo que imprime el script.
+
+
+PASO 2 — Token de SonarCloud (solo una vez)
+--------------------------------------------
+1. Entra a https://sonarcloud.io con tu cuenta GitHub
+2. My Account → Security → Generate Token (nombre: happyjump)
+3. Copia el token (solo se muestra una vez)
+
+Importante: en el proyecto desactiva Automatic Analysis:
+  https://sonarcloud.io/project/analysis_method?id=Randy236_apphappy
+  → Automatic Analysis = OFF
+
+
+PASO 3 — Publicar análisis + cobertura a SonarCloud
+----------------------------------------------------
+En PowerShell:
+
+  cd D:\apphappy-full
+  $env:SONAR_TOKEN = "PEGA_AQUI_TU_TOKEN"
+  .\scripts\publicar-sonarcloud.ps1
+
+Tarda unos 5-8 minutos (tests + JaCoCo + subida).
+
+
+PASO 4 — Captura para el profesor
+---------------------------------
+1. Abre (espera 1-2 min y refresca F5):
+     https://sonarcloud.io/project/overview?id=Randy236_apphappy
+2. En la tarjeta "Coverage" debe verse >= 80%
+3. Guarda la captura como CAPTURA_SONAR_COVERAGE.png en esta carpeta
+
+
+PASO 5 — Alternativa por GitHub Actions
+---------------------------------------
+Si ya tienes SONAR_TOKEN en GitHub Secrets:
+  Repo → Actions → SonarCloud → Run workflow
+
+Luego abre el mismo enlace del dashboard y captura.
+
+
+Qué incluye la medición
+-----------------------
+- Pruebas: app/src/test/java/.../ui/util/ (TimeUtil, CanchaGrupoTurno, etc.)
+- Informe: JaCoCo XML → SonarCloud
+- Excluido del %: pantallas UI, ViewModels, red (no son pruebas unitarias)
+
+Repositorio:
+  https://github.com/Randy236/apphappy

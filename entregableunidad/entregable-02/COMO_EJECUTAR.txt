@@ -1,0 +1,83 @@
+ENTREGABLE 2 — COMANDOS PASO A PASO
+Pruebas integrales Postman + validación de parámetros
+====================================================
+
+PASO 1 — Encender MySQL (Laragon)
+---------------------------------
+Abre Laragon y pulsa "Start All".
+MySQL debe quedar en el puerto 3306.
+
+Si la base no existe, en phpMyAdmin ejecuta una vez:
+  D:\apphappy-full\server\schema.sql
+
+
+PASO 2 — Levantar la API
+------------------------
+Abre PowerShell:
+
+  cd D:\apphappy-full\server
+  npm install
+  npm start
+
+Debe aparecer: Happy Jump API http://0.0.0.0:3000
+Deja esa ventana abierta.
+
+
+PASO 3 — (Si no puedes entrar en la app) Liberar sesiones
+---------------------------------------------------------
+Si dice "usuario activo en otro dispositivo", en OTRA PowerShell:
+
+  cd D:\apphappy-full\server
+  node scripts/clear-sessions-for-k6.mjs
+
+Usuarios de prueba:
+  Admin     PIN 1234  (administrador)
+  Rosisela  PIN 1234  (trabajador)
+
+
+PASO 4 — Opción A: Probar con Postman (manual)
+----------------------------------------------
+1. Abre Postman → Import
+2. Importa estos archivos:
+     D:\apphappy-full\docs\postman\HappyJump-Validaciones.postman_collection.json
+     D:\apphappy-full\docs\postman\HappyJump-Seguridad.postman_collection.json
+3. Clic derecho en la colección → Run collection
+4. Deben salir todas las pruebas en verde
+
+
+PASO 5 — Opción B: Scripts Python (generan Word automático)
+-----------------------------------------------------------
+Primera vez (instalar librerías):
+
+  cd D:\apphappy-full\scripts\postman_reports
+  python -m pip install -r requirements.txt
+
+Ejecutar pruebas de VALIDACIÓN (12 casos VAL-xxx):
+
+  python run_validaciones.py
+
+Ejecutar pruebas de SEGURIDAD (10 casos SEC-xxx):
+
+  python run_seguridad.py
+
+Los informes Word se guardan en:
+  D:\apphappy-full\scripts\postman_reports\reportes\
+    INFORME_VALIDACION_PARAMETROS.docx
+    INFORME_PRUEBAS_SEGURIDAD.docx
+
+(Copia esos .docx a la carpeta entregable-02 si los pide el profesor.)
+
+
+PASO 6 — Qué valida este entregable
+-----------------------------------
+- Nombre sin números
+- PIN solo números, mín. 4 y máx. 5 dígitos
+- Fechas, montos, deportes y salones correctos
+- La API responde 400 cuando los datos son inválidos
+- Pruebas de seguridad: token, roles, sesión única
+
+Código de validaciones:
+  D:\apphappy-full\server\src\domain\entradaValidacion.js
+
+Repositorio GitHub:
+  https://github.com/Randy236/apphappy

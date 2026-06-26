@@ -1,0 +1,424 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "API Happy Jump",
+    "description": "API REST para reservas de cancha y salones, autenticación JWT y reportes administrativos.\n\n**Usuarios de prueba:** Admin / Rosisela — PIN `1234`",
+    "version": "1.0.0"
+  },
+  "tags": [
+    { "name": "Sistema", "description": "Salud y diagnóstico" },
+    { "name": "Pruebas k6", "description": "Endpoints ligeros para pruebas de rendimiento" },
+    { "name": "Autenticación", "description": "Login, logout y PIN" },
+    { "name": "Reservas Cancha", "description": "CRUD y operaciones de cancha deportiva" },
+    { "name": "Reservas Salones", "description": "Reservas de salones para eventos" },
+    { "name": "Reportes", "description": "Solo administrador" },
+    { "name": "Auditoría", "description": "Trazabilidad de cambios en la base de datos (solo admin)" }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Token obtenido en POST /auth/login"
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": { "type": "string" }
+        }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "required": ["nombre", "pin"],
+        "properties": {
+          "nombre": { "type": "string", "example": "Admin" },
+          "pin": { "type": "string", "example": "1234" }
+        }
+      },
+      "LoginResponse": {
+        "type": "object",
+        "properties": {
+          "token": { "type": "string" },
+          "usuario": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "integer" },
+              "nombre": { "type": "string" },
+              "rol": { "type": "string", "enum": ["trabajador", "administrador"] }
+            }
+          }
+        }
+      },
+      "ReservaCanchaCreate": {
+        "type": "object",
+        "required": ["nombreCliente", "deporte", "fecha", "hora", "montoTotal"],
+        "properties": {
+          "nombreCliente": { "type": "string", "example": "Juan Pérez" },
+          "deporte": { "type": "string", "enum": ["Futbol", "Voley"] },
+          "fecha": { "type": "string", "format": "date", "example": "2026-05-20" },
+          "hora": { "type": "string", "example": "10:00:00" },
+          "montoTotal": { "type": "number", "example": 50 },
+          "adelanto": { "type": "number", "example": 20 },
+          "duracionMinutos": { "type": "integer", "enum": [30, 60] }
+        }
+      },
+      "ReservaSalonCreate": {
+        "type": "object",
+        "required": ["nombreCliente", "tipoEvento", "zona", "horaInicio", "horaFin", "precioTotal", "salon", "fecha"],
+        "properties": {
+          "nombreCliente": { "type": "string" },
+          "tipoEvento": { "type": "string", "enum": ["Cumpleanos", "Otro"] },
+          "nombreCumpleanero": { "type": "string" },
+          "zona": { "type": "string" },
+          "numeroNinos": { "type": "integer" },
+          "horaInicio": { "type": "string", "example": "15:00:00" },
+          "horaFin": { "type": "string", "example": "18:00:00" },
+          "precioTotal": { "type": "number" },
+          "adelanto": { "type": "number" },
+          "salon": {
+            "type": "string",
+            "enum": ["Ex Salón de Pinturas", "Salón Principal", "Salón de Eventos Grande", "Salón Laser"]
+          },
+          "fecha": { "type": "string", "format": "date" }
+        }
+      },
+      "MotivoCancelacion": {
+        "type": "object",
+        "required": ["motivo"],
+        "properties": {
+          "motivo": { "type": "string", "example": "Cliente canceló por lluvia" }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": ["Sistema"],
+        "summary": "Estado del servicio",
+        "description": "Comprueba que la API responde.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": { "type": "boolean" },
+                    "service": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/hello": {
+      "get": {
+        "tags": ["Pruebas k6"],
+        "summary": "Saludo (load test k6)",
+        "responses": {
+          "200": {
+            "description": "Good Morning",
+            "content": { "text/plain": { "schema": { "type": "string", "example": "Good Morning" } } }
+          }
+        }
+      }
+    },
+    "/sumar": {
+      "get": {
+        "tags": ["Pruebas k6"],
+        "summary": "Suma dos números (smoke/stress k6)",
+        "parameters": [
+          { "name": "a", "in": "query", "required": true, "schema": { "type": "number" }, "example": 5 },
+          { "name": "b", "in": "query", "required": true, "schema": { "type": "number" }, "example": 3 }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resultado",
+            "content": { "text/plain": { "schema": { "type": "string", "example": "8" } } }
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": ["Autenticación"],
+        "summary": "Iniciar sesión",
+        "description": "Devuelve JWT. Usuarios seed: Admin / Rosisela con PIN 1234.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/LoginRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login OK",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/LoginResponse" } } }
+          },
+          "401": { "description": "Credenciales incorrectas" },
+          "409": { "description": "Usuario ya activo en otro dispositivo" }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "tags": ["Autenticación"],
+        "summary": "Cerrar sesión",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Sesión cerrada" }
+        }
+      }
+    },
+    "/usuarios/{id}": {
+      "delete": {
+        "tags": ["Autenticación"],
+        "summary": "Eliminado lógico de usuario (solo admin)",
+        "description": "Marca `deleted_at`; no borra la fila físicamente.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Usuario eliminado lógicamente" },
+          "404": { "description": "No encontrado" }
+        }
+      }
+    },
+    "/usuarios/{id}/pin": {
+      "put": {
+        "tags": ["Autenticación"],
+        "summary": "Cambiar PIN",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "pinActual": { "type": "string" },
+                  "pinNuevo": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "PIN actualizado" }
+        }
+      }
+    },
+    "/reservas-cancha": {
+      "get": {
+        "tags": ["Reservas Cancha"],
+        "summary": "Listar reservas de cancha",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "desde", "in": "query", "schema": { "type": "string", "format": "date" } },
+          { "name": "hasta", "in": "query", "schema": { "type": "string", "format": "date" } }
+        ],
+        "responses": { "200": { "description": "Lista de reservas" } }
+      },
+      "post": {
+        "tags": ["Reservas Cancha"],
+        "summary": "Crear reserva de cancha",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ReservaCanchaCreate" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Reserva creada" },
+          "409": { "description": "Horario ocupado" }
+        }
+      }
+    },
+    "/reservas-cancha/{id}/cobrar-saldo": {
+      "put": {
+        "tags": ["Reservas Cancha"],
+        "summary": "Cobrar saldo pendiente de cancha",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": { "200": { "description": "Reserva actualizada" } }
+      }
+    },
+    "/reservas-cancha/{id}": {
+      "delete": {
+        "tags": ["Reservas Cancha"],
+        "summary": "Eliminado lógico de reserva de cancha (solo admin)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Eliminado lógico OK" },
+          "404": { "description": "No encontrada" }
+        }
+      }
+    },
+    "/reservas-cancha/{id}/cancelar": {
+      "put": {
+        "tags": ["Reservas Cancha"],
+        "summary": "Cancelar reserva de cancha",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/MotivoCancelacion" }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Reserva cancelada" } }
+      }
+    },
+    "/reservas-salones": {
+      "get": {
+        "tags": ["Reservas Salones"],
+        "summary": "Listar reservas de salones",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "salon", "in": "query", "schema": { "type": "string" } },
+          { "name": "desde", "in": "query", "schema": { "type": "string", "format": "date" } },
+          { "name": "hasta", "in": "query", "schema": { "type": "string", "format": "date" } }
+        ],
+        "responses": { "200": { "description": "Lista de reservas" } }
+      },
+      "post": {
+        "tags": ["Reservas Salones"],
+        "summary": "Crear reserva de salón (solo trabajador)",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ReservaSalonCreate" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Reserva creada" },
+          "403": { "description": "Solo trabajador" }
+        }
+      }
+    },
+    "/reservas-salones/{id}/cobrar-saldo": {
+      "put": {
+        "tags": ["Reservas Salones"],
+        "summary": "Cobrar saldo de salón",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": { "200": { "description": "Reserva actualizada" } }
+      }
+    },
+    "/reservas-salones/{id}": {
+      "delete": {
+        "tags": ["Reservas Salones"],
+        "summary": "Eliminado lógico de reserva de salón (solo admin)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Eliminado lógico OK" },
+          "404": { "description": "No encontrada" }
+        }
+      }
+    },
+    "/reservas-salones/{id}/cancelar": {
+      "put": {
+        "tags": ["Reservas Salones"],
+        "summary": "Cancelar reserva de salón",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/MotivoCancelacion" }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Reserva cancelada" } }
+      }
+    },
+    "/reportes": {
+      "get": {
+        "tags": ["Reportes"],
+        "summary": "Reportes de ingresos (solo admin)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "periodo",
+            "in": "query",
+            "schema": { "type": "string", "enum": ["diario", "semanal", "mensual"], "default": "semanal" }
+          },
+          { "name": "fecha", "in": "query", "schema": { "type": "string", "format": "date" } }
+        ],
+        "responses": { "200": { "description": "Reporte consolidado" } }
+      }
+    },
+    "/reportes/cancelaciones": {
+      "get": {
+        "tags": ["Reportes"],
+        "summary": "Listado de cancelaciones (solo admin)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "periodo",
+            "in": "query",
+            "schema": { "type": "string", "enum": ["diario", "semanal", "mensual"], "default": "semanal" }
+          },
+          { "name": "fecha", "in": "query", "schema": { "type": "string", "format": "date" } }
+        ],
+        "responses": { "200": { "description": "Cancelaciones en el periodo" } }
+      }
+    },
+    "/auditoria": {
+      "get": {
+        "tags": ["Auditoría"],
+        "summary": "Consultar tabla de auditoría (solo admin)",
+        "description": "Lista quién hizo qué cambio (crear, editar, eliminar, login, etc.) con fecha, tabla y detalle JSON.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "tabla", "in": "query", "schema": { "type": "string", "example": "reservas_cancha" } },
+          {
+            "name": "accion",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["CREAR", "ACTUALIZAR", "ELIMINAR", "CANCELAR", "COBRAR_SALDO", "CAMBIAR_PIN", "LOGIN", "LOGOUT"]
+            }
+          },
+          { "name": "desde", "in": "query", "schema": { "type": "string", "format": "date" } },
+          { "name": "hasta", "in": "query", "schema": { "type": "string", "format": "date" } },
+          { "name": "limite", "in": "query", "schema": { "type": "integer", "default": 100, "maximum": 500 } }
+        ],
+        "responses": { "200": { "description": "Filas de la tabla auditoria" } }
+      }
+    }
+  }
+}

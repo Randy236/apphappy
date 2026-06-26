@@ -20,6 +20,10 @@ describe("validarNombreUsuario", () => {
   it("rechaza números en el nombre", () => {
     assert.equal(validarNombreUsuario("Juan123").ok, false);
   });
+  it("acepta usuarioa..usuarioe de prueba", () => {
+    assert.equal(validarNombreUsuario("usuarioa").ok, true);
+    assert.equal(validarNombreUsuario("usuarioe").ok, true);
+  });
   it("rechaza vacío", () => {
     assert.equal(validarNombreUsuario("").ok, false);
   });

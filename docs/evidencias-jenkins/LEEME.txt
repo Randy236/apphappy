@@ -1,0 +1,5 @@
+Guarda aqui capturas del salon:
+- docker-desktop-running.png
+- docker-ps-jenkins.png
+- jenkins-pipeline-success.png
+- carpeta-dist-o-deploy.png

@@ -1,0 +1,192 @@
+{
+    "root_group": {
+        "groups": {},
+        "checks": {
+                "smoke GET /health": {
+                    "name": "smoke GET /health",
+                    "path": "::smoke GET /health",
+                    "id": "c30cb4e0b33417ad471e431eeb7de633",
+                    "passes": 12,
+                    "fails": 0
+                },
+                "smoke GET /reservas-cancha": {
+                    "id": "3d5e004aafc49d01799a6a959f8b92a4",
+                    "passes": 12,
+                    "fails": 0,
+                    "name": "smoke GET /reservas-cancha",
+                    "path": "::smoke GET /reservas-cancha"
+                },
+                "smoke GET /reportes": {
+                    "path": "::smoke GET /reportes",
+                    "id": "16ca423a4cae5b768d51cb46ed7fb276",
+                    "passes": 12,
+                    "fails": 0,
+                    "name": "smoke GET /reportes"
+                },
+                "load GET /health": {
+                    "name": "load GET /health",
+                    "path": "::load GET /health",
+                    "id": "52f87e1d4fde73380f0857e7207d5668",
+                    "passes": 199,
+                    "fails": 11789
+                },
+                "load GET /reservas-cancha": {
+                    "name": "load GET /reservas-cancha",
+                    "path": "::load GET /reservas-cancha",
+                    "id": "66383131f1751f7155b6b01f77c856a6",
+                    "passes": 36,
+                    "fails": 3
+                },
+                "load GET /reservas-salones": {
+                    "name": "load GET /reservas-salones",
+                    "path": "::load GET /reservas-salones",
+                    "id": "a1ec4f24bbd4af1daa8fbe53326232ad",
+                    "passes": 34,
+                    "fails": 5
+                },
+                "load GET /reportes": {
+                    "name": "load GET /reportes",
+                    "path": "::load GET /reportes",
+                    "id": "b1ef5943b772de6418f848feb25cb587",
+                    "passes": 32,
+                    "fails": 7
+                },
+                "stress GET /health": {
+                    "fails": 5926,
+                    "name": "stress GET /health",
+                    "path": "::stress GET /health",
+                    "id": "d124c283b910ef6395a4161542eacd28",
+                    "passes": 0
+                },
+                "stress GET /sumar": {
+                    "name": "stress GET /sumar",
+                    "path": "::stress GET /sumar",
+                    "id": "beadcf21e8bd949e03d36a201581f433",
+                    "passes": 0,
+                    "fails": 5926
+                }
+            },
+        "name": "",
+        "path": "",
+        "id": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "metrics": {
+        "http_req_blocked": {
+            "avg": 0.006032110753523472,
+            "min": 0,
+            "med": 0,
+            "max": 111.3941,
+            "p(90)": 0,
+            "p(95)": 0
+        },
+        "checks": {
+            "passes": 337,
+            "fails": 23656,
+            "thresholds": {
+                "rate>=0.90": true
+            },
+            "value": 0.014045763347643063
+        },
+        "vus_max": {
+            "value": 50,
+            "min": 50,
+            "max": 50
+        },
+        "iterations": {
+            "count": 17926,
+            "rate": 108.52563533367004
+        },
+        "http_req_waiting": {
+            "p(90)": 0,
+            "p(95)": 0,
+            "avg": 4.993206797247811,
+            "min": 0,
+            "med": 0,
+            "max": 4216.9441
+        },
+        "http_req_tls_handshaking": {
+            "p(95)": 0,
+            "avg": 0,
+            "min": 0,
+            "med": 0,
+            "max": 0,
+            "p(90)": 0
+        },
+        "http_req_sending": {
+            "p(95)": 0,
+            "avg": 0.0015584396848296528,
+            "min": 0,
+            "med": 0,
+            "max": 6.0774,
+            "p(90)": 0
+        },
+        "http_req_duration": {
+            "min": 0,
+            "med": 0,
+            "max": 4219.5345,
+            "p(90)": 0,
+            "p(95)": 0,
+            "avg": 5.007403279325267,
+            "thresholds": {
+                "p(95)<800": false
+            }
+        },
+        "http_reqs": {
+            "count": 36044,
+            "rate": 218.21365614006487
+        },
+        "http_req_duration{expected_response:true}": {
+            "med": 95.4858,
+            "max": 4219.5345,
+            "p(90)": 551.44576,
+            "p(95)": 943.2056799999973,
+            "avg": 213.4532934731935,
+            "min": 1.2113
+        },
+        "http_req_connecting": {
+            "med": 0,
+            "max": 26.9507,
+            "p(90)": 0,
+            "p(95)": 0,
+            "avg": 0.0014509682610143158,
+            "min": 0
+        },
+        "vus": {
+            "max": 49,
+            "value": 1,
+            "min": 0
+        },
+        "http_req_receiving": {
+            "avg": 0.012638042392631218,
+            "min": 0,
+            "med": 0,
+            "max": 28.0918,
+            "p(90)": 0,
+            "p(95)": 0
+        },
+        "http_req_failed": {
+            "passes": 35615,
+            "fails": 429,
+            "thresholds": {
+                "rate<0.05": true
+            },
+            "value": 0.9880978803684386
+        },
+        "iteration_duration": {
+            "p(95)": 202.7472,
+            "avg": 116.79241367845668,
+            "min": 0.8698,
+            "med": 78.9394,
+            "max": 7631.5493,
+            "p(90)": 202.4094
+        },
+        "data_sent": {
+            "count": 112632,
+            "rate": 681.884377937182
+        },
+        "data_received": {
+            "count": 441049,
+            "rate": 2670.150783123945
+        }
+    }
+}
