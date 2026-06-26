@@ -1,69 +1,16 @@
-# Requiere secret SNYK_TOKEN en GitHub: Settings → Secrets → Actions
-# Cómo obtener token: https://app.snyk.io/account (Auth token / Service accounts)
-# Sin token: el workflow termina en verde con aviso (no bloquea push/PR).
+# Snyk deshabilitado en CI (no corre en push/PR).
+# Para ejecutar manual: Actions → Snyk Security → Run workflow
+# Requiere SNYK_TOKEN en Settings → Secrets → Actions
 name: Snyk Security
 
 on:
-  push:
-    branches: [main, develop]
-  pull_request:
-    branches: [main, develop]
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  snyk-reminder:
-    if: ${{ secrets.SNYK_TOKEN == '' }}
+  snyk-skipped:
     runs-on: ubuntu-latest
     steps:
-      - name: SNYK_TOKEN no configurado
-        run: |
-          echo "::warning::Omitiendo Snyk: crea SNYK_TOKEN en GitHub → Settings → Secrets → Actions"
-          echo "Token: https://app.snyk.io/account"
-
-  snyk-gradle:
-    if: ${{ secrets.SNYK_TOKEN != '' }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 17
-
-      - uses: snyk/actions/setup@master
-
-      # Android — dependencias Gradle
-      - name: Snyk test (Gradle / Android)
-        run: snyk test --all-projects --severity-threshold=medium
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        continue-on-error: true
-
-  snyk-server:
-    if: ${{ secrets.SNYK_TOKEN != '' }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-
-      - uses: actions/setup-node@v5
-        with:
-          node-version: "22"
-          cache: npm
-          cache-dependency-path: server/package-lock.json
-
-      - uses: snyk/actions/setup@master
-
-      - name: Instalar API
-        working-directory: server
-        run: npm ci --ignore-scripts
-
-      # API Node — dependencias npm
-      - name: Snyk test (server npm)
-        run: snyk test --file=server/package.json --severity-threshold=medium
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        continue-on-error: true
+      - run: echo "Snyk omitido en CI. Ejecutar manualmente si se necesita."
