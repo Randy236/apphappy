@@ -49,3 +49,7 @@ infra/docker/data/
 .gradle-ci/
 .npm-cache/
 tmp/
+
+# MkDocs (sitio generado y entorno local)
+site/
+.venv-mkdocs/

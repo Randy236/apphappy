@@ -1,0 +1,88 @@
+site_name: Happy Jump — Documentación
+site_description: Documentación del proyecto Happy Jump (Android + API Node.js + MySQL)
+site_author: Equipo Happy Jump
+site_url: https://randy236.github.io/apphappy/
+repo_url: https://github.com/Randy236/apphappy
+repo_name: Randy236/apphappy
+edit_uri: edit/main/docs/
+
+docs_dir: docs
+
+theme:
+  name: material
+  language: es
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: amber
+      toggle:
+        icon: material/brightness-7
+        name: Modo oscuro
+    - scheme: slate
+      primary: indigo
+      accent: amber
+      toggle:
+        icon: material/brightness-4
+        name: Modo claro
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - toc.follow
+
+plugins:
+  - search:
+      lang: es
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - tables
+  - toc:
+      permalink: true
+
+nav:
+  - Inicio: index.md
+  - Proyecto:
+      - Entrega y revisión: ENTREGA_REVISION.md
+      - Checklist del profesor: CHECKLIST_ENTREGA_PROFESOR.md
+      - Scrum + CMMI: SCRUM_CMMI_HAPPY_JUMP.md
+      - Project Charter (auditoría SDLC): PROJECT_CHARTER_AUDITORIA_SDLC_HAPPY_JUMP.md
+  - Requisitos y pruebas:
+      - Plan maestro de pruebas: PLAN_MAESTRO_PRUEBAS_SOFTWARE_HAPPY_JUMP.md
+      - Plan de pruebas (resumen): PLAN_DE_PRUEBAS.md
+      - Notas matriz actividades: MATRIZ_ACTIVIDADES_NOTAS.md
+  - Despliegue y CI/CD:
+      - Checklist despliegue: DESPLIEGUE_Y_PRUEBAS_CHECKLIST.md
+      - Guía Jenkins CI/CD: GUIA_JENKINS_CI_CD.md
+      - Jenkins paso a paso: JENKINS_PRUEBA_PASO_A_PASO.md
+      - Docker en disco E: DOCKER_DISCO_E.md
+  - API y calidad:
+      - Swagger: SWAGGER_HAPPY_JUMP.md
+      - Postman (ítem 2): GUIA_ITEM2_POSTMAN_INTEGRACION.md
+      - Sonar / Snyk: EVIDENCIAS_CALIDAD_SONAR_SNYK.md
+      - Sonar cobertura (ítem 3): GUIA_ITEM3_SONAR_COBERTURA.md
+      - Pruebas de carga k6: TUTORIAL_K6_HAPPY_JUMP.md
+  - Gestión ágil:
+      - Guía Jira: GUIA_JIRA_HAPPY_JUMP.md
+      - Daily log: scrum/daily-log.md
+      - Plantilla sprint planning: scrum/plantilla-sprint-planning.md
+      - Plantilla retrospectiva: scrum/plantilla-retrospectiva.md
+      - Matriz Scrum ↔ CMMI: scrum/MATRIZ_SCRUM_CMMI.md
+  - Colaboración:
+      - Evidencia GitHub: evidencias-github/APORTE_COLABORACION.md
+      - Evidencias ítem 3: evidencias-item3/LEEME.txt
+  - MkDocs:
+      - Cómo usar esta documentación: GUIA_MKDOCS.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/Randy236/apphappy

@@ -112,6 +112,19 @@ Tipos recomendados de commit:
 - Deploy: `ci/deploy-server.sh` → `~/servers/happyjump/`
 - Pipeline: `Jenkinsfile` (tests → Sonar → build → deploy)
 
+## Documentación MkDocs (sitio web)
+
+Documentación navegable con **MkDocs Material** (como pide el curso):
+
+```bash
+pip install -r requirements-mkdocs.txt
+python3 -m mkdocs serve
+```
+
+Abre [http://127.0.0.1:8000](http://127.0.0.1:8000). Guía completa: [`docs/GUIA_MKDOCS.md`](docs/GUIA_MKDOCS.md).
+
+Publicación en GitHub Pages (rama `main`): workflow `.github/workflows/mkdocs.yml` → `https://randy236.github.io/apphappy/`
+
 ## Material para curso
 
 - Checklist de despliegue y testing: `docs/DESPLIEGUE_Y_PRUEBAS_CHECKLIST.md`
